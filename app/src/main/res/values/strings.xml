@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:locale="id">
+    <string name="app_name">WakeAlarm</string>
+    <string name="tagline">May this journey lead us starward — Kindness</string>
+
+    <!-- Common actions -->
+    <string name="action_stop_alarm">Matikan alarm</string>
+    <string name="action_pause">Jeda</string>
+    <string name="action_resume">Aktifkan</string>
+    <string name="action_fix_now">Lengkapi sekarang</string>
+    <string name="action_reconnect">Hubungkan ulang</string>
+    <string name="action_manage_keywords">Atur kata kunci</string>
+    <string name="action_test_alarm">Tes alarm</string>
+    <string name="action_add_tile">Quick Settings</string>
+    <string name="action_allow">Izinkan</string>
+    <string name="action_open_autostart">Buka pengaturan Autostart</string>
+    <string name="action_pick_file">File audio</string>
+    <string name="action_pick_system">Nada sistem</string>
+    <string name="action_preview">Putar contoh</string>
+    <string name="action_stop_preview">Hentikan</string>
+    <string name="action_reset_default">Default</string>
+    <string name="action_undo">Urungkan</string>
+    <string name="action_delete">Hapus</string>
+    <string name="action_cancel">Batal</string>
+    <string name="action_get_started">Mulai</string>
+    <string name="action_agree_continue">Saya mengerti dan setuju</string>
+    <string name="action_decline">Jangan sekarang</string>
+    <string name="action_continue">Lanjut</string>
+    <string name="action_skip_for_now">Lewati dulu</string>
+    <string name="action_start_using">Mulai gunakan WakeAlarm</string>
+
+    <!-- Accessibility -->
+    <string name="cd_back">Kembali</string>
+    <string name="cd_add_keyword">Tambah kata kunci</string>
+    <string name="cd_remove_keyword">Hapus kata kunci %1$s</string>
+
+    <!-- Notification channels & notifications -->
+    <string name="channel_alarm_name">Alarm kata kunci</string>
+    <string name="channel_alarm_desc">Berbunyi saat pesan WhatsApp berisi kata kunci darurat</string>
+    <string name="channel_status_name">Status WakeAlarm</string>
+    <string name="channel_status_desc">Menampilkan status mode siaga dan tombol jeda cepat</string>
+    <string name="alarm_notif_title">Pesan darurat masuk</string>
+    <string name="alarm_notif_title_sender">Pesan darurat dari %1$s</string>
+    <string name="alarm_notif_keywords">Kata kunci: %1$s</string>
+    <string name="status_notif_on">Siaga aktif — memantau pesan WhatsApp</string>
+    <string name="status_notif_off">Dijeda — alarm tidak akan berbunyi</string>
+
+    <!-- Quick Settings tile -->
+    <string name="tile_label">Mode siaga</string>
+    <string name="tile_on">Aktif</string>
+    <string name="tile_off">Dijeda</string>
+    <string name="tile_already_added">Tile sudah ada di Quick Settings</string>
+
+    <!-- Home -->
+    <string name="standby_title">Mode siaga</string>
+    <string name="standby_state_on">Aktif</string>
+    <string name="standby_state_off">Dijeda</string>
+    <string name="standby_desc_on">Alarm akan berbunyi keras — meski HP hening atau terkunci — saat pesan WhatsApp darurat masuk.</string>
+    <string name="standby_desc_on_not_ready">Siaga aktif, tapi pengaturan belum lengkap. Lihat peringatan di atas agar alarm benar-benar bisa berbunyi.</string>
+    <string name="standby_desc_off">Pesan tetap dipantau, tapi alarm tidak akan berbunyi. Ketuk untuk kembali siaga.</string>
+    <plurals name="home_setup_incomplete_title">
+        <item quantity="other">%1$d izin wajib belum diberikan</item>
+    </plurals>
+    <string name="home_setup_incomplete_body">Tanpa izin ini alarm bisa gagal berbunyi saat dibutuhkan.</string>
+    <string name="home_listener_disconnected_title">Pemantauan notifikasi terputus</string>
+    <string name="home_listener_disconnected_body">Sistem menghentikan pemantauan di latar belakang. Hubungkan ulang, dan pastikan pengecualian baterai sudah diizinkan.</string>
+    <string name="home_keywords_insufficient_title">Alarm tidak akan pernah berbunyi</string>
+    <string name="home_keywords_insufficient_body">Baru %1$d kata kunci aktif, padahal alarm butuh minimal %2$d kata kunci dalam satu pesan.</string>
+    <string name="home_alarm_ringing_title">Alarm sedang berbunyi</string>
+    <string name="home_alarm_ringing_body">Dipicu oleh pesan WhatsApp yang berisi kata kunci darurat.</string>
+    <string name="stat_active_keywords">Kata kunci aktif</string>
+    <string name="stat_threshold">Kata kunci per pesan</string>
+    <string name="stat_last_alarm">Alarm terakhir</string>
+    <string name="home_section_configure">Pengaturan</string>
+    <plurals name="home_keywords_subtitle">
+        <item quantity="other">%1$d aktif · alarm jika ≥%2$d cocok dalam satu pesan</item>
+    </plurals>
+    <string name="home_permissions_subtitle">%1$d dari %2$d diberikan</string>
+    <string name="privacy_short">Pesan hanya diperiksa di HP ini dan tidak pernah dikirim ke mana pun.</string>
+    <string name="test_alarm_message">Ini tes alarm. Geser tombol di bawah untuk mematikannya.</string>
+
+    <!-- Keywords -->
+    <string name="keywords_title">Kata kunci</string>
+    <plurals name="keywords_summary_title">
+        <item quantity="other">%1$d kata kunci aktif</item>
+    </plurals>
+    <string name="keywords_summary_body">Alarm berbunyi jika minimal %1$d kata kunci berbeda muncul dalam satu pesan. Huruf besar/kecil tidak berpengaruh.</string>
+    <string name="tester_title">Uji pesan</string>
+    <string name="tester_body">Ketik contoh pesan untuk melihat apakah alarm akan berbunyi dengan pengaturan sekarang.</string>
+    <string name="tester_placeholder">mis. Koas anak segera ke IGD, urgent</string>
+    <string name="tester_would_ring">Alarm akan berbunyi (%1$d dari %2$d cocok)</string>
+    <string name="tester_would_not_ring">Tidak memicu alarm (%1$d dari %2$d cocok)</string>
+    <string name="keywords_custom_section">Kata kunci sendiri</string>
+    <string name="keywords_custom_supporting">Tambahkan kata atau frasa khusus, mis. nama bangsal.</string>
+    <string name="keywords_input_label">Kata kunci baru</string>
+    <string name="keywords_input_placeholder">mis. bangsal anak</string>
+    <string name="keywords_input_hint">Satu kata dicocokkan utuh; frasa dicocokkan persis.</string>
+    <string name="keywords_custom_empty">Belum ada kata kunci tambahan.</string>
+    <string name="keywords_preset_section">Kata kunci bawaan</string>
+    <string name="keywords_preset_supporting">Centang yang relevan dengan tempat jagamu.</string>
+    <string name="keyword_error_empty">Kata kunci tidak boleh kosong</string>
+    <string name="keyword_error_short">Minimal %1$d karakter</string>
+    <string name="keyword_error_long">Maksimal %1$d karakter</string>
+    <string name="keyword_error_duplicate">Kata kunci ini sudah ada</string>
+    <string name="keyword_removed">\"%1$s\" dihapus</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Pengaturan alarm</string>
+    <string name="settings_section_sensitivity">Sensitivitas</string>
+    <string name="settings_threshold_title">Kata kunci per pesan</string>
+    <string name="settings_threshold_value">≥ %1$d</string>
+    <string name="settings_threshold_sensitive">Lebih sensitif</string>
+    <string name="settings_threshold_strict">Lebih ketat</string>
+    <string name="settings_threshold_hint_1">Satu kata kunci saja sudah memicu alarm. Paling sensitif, tapi lebih sering alarm palsu.</string>
+    <string name="settings_threshold_hint_2">Butuh %1$d kata kunci berbeda dalam satu pesan. Seimbang — direkomendasikan.</string>
+    <string name="settings_threshold_hint_many">Butuh %1$d kata kunci berbeda dalam satu pesan. Pastikan cukup banyak kata kunci yang aktif.</string>
+    <string name="settings_section_sound">Suara dan getar</string>
+    <string name="settings_ringtone_label">Nada alarm</string>
+    <string name="settings_preview_note">Contoh diputar dengan volume alarm HP saat ini. Saat alarm sungguhan, volume dinaikkan ke maksimum lalu dikembalikan setelah dimatikan.</string>
+    <string name="settings_ramp_title">Naikkan volume bertahap</string>
+    <string name="settings_ramp_desc">Mulai pelan lalu naik ke penuh dalam ±5 detik</string>
+    <string name="settings_vibrate_title">Getar</string>
+    <string name="settings_vibrate_desc">Getar bersamaan dengan suara alarm</string>
+    <string name="settings_section_about">Tentang</string>
+    <string name="settings_replay_onboarding">Lihat panduan awal</string>
+    <string name="settings_replay_onboarding_desc">Ulangi pengenalan dan pengecekan izin</string>
+    <string name="settings_version">Versi</string>
+    <string name="ringtone_default">Nada alarm bawaan HP</string>
+    <string name="ringtone_custom_fallback">Audio kustom</string>
+    <string name="ringtone_system_fallback">Nada sistem</string>
+    <string name="privacy_title">Privasi</string>
+    <string name="privacy_full">WakeAlarm membaca notifikasi WhatsApp hanya untuk mencari kata kunci. Semua pemeriksaan terjadi di HP ini. Riwayat alarm disimpan secara lokal dan tidak ikut dicadangkan. Tidak ada data yang dikirim ke server mana pun.</string>
+
+    <!-- Permissions -->
+    <string name="permissions_title">Izin dan keandalan</string>
+    <string name="permissions_progress">%1$d dari %2$d izin diberikan</string>
+    <string name="permissions_required_section">Wajib</string>
+    <string name="permissions_required_supporting">Diperlukan agar alarm bisa berbunyi.</string>
+    <string name="permissions_recommended_section">Disarankan</string>
+    <string name="permissions_recommended_supporting">Membuat alarm lebih andal di berbagai kondisi.</string>
+    <string name="perm_granted">Diizinkan</string>
+    <string name="perm_listener_title">Akses notifikasi</string>
+    <string name="perm_listener_desc">Membaca notifikasi WhatsApp untuk mencari kata kunci</string>
+    <string name="perm_notifications_title">Tampilkan notifikasi</string>
+    <string name="perm_notifications_desc">Menampilkan alarm dan status siaga</string>
+    <string name="perm_fullscreen_title">Alarm layar penuh</string>
+    <string name="perm_fullscreen_desc">Menampilkan alarm di atas layar kunci</string>
+    <string name="perm_battery_title">Tanpa batasan baterai</string>
+    <string name="perm_battery_desc">Mencegah sistem menghentikan pemantauan saat HP tidur</string>
+    <string name="perm_overlay_title">Tampil di atas aplikasi lain</string>
+    <string name="perm_overlay_desc">Membuka layar alarm langsung saat HP sedang dipakai</string>
+    <string name="perm_dnd_title">Akses Jangan Ganggu</string>
+    <string name="perm_dnd_desc">Membantu alarm tetap berbunyi saat mode Jangan Ganggu</string>
+    <string name="permissions_xiaomi_title">Khusus Xiaomi / Redmi / POCO</string>
+    <string name="permissions_xiaomi_body">HyperOS/MIUI bisa menghentikan aplikasi di latar belakang. Aktifkan juga Autostart untuk WakeAlarm, dan atur Penghemat baterai ke \"Tanpa batasan\".</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_step_of">Langkah %1$d dari %2$d</string>
+    <string name="onboarding_welcome_title">Jangan lewatkan panggilan darurat</string>
+    <string name="onboarding_welcome_body">WakeAlarm membangunkanmu saat pesan WhatsApp penting masuk — bahkan saat HP hening, terkunci, atau kamu sedang tidur.</string>
+    <string name="onboarding_feature_keywords_title">Hanya pesan yang penting</string>
+    <string name="onboarding_feature_keywords_body">Alarm berbunyi hanya jika pesan berisi kombinasi kata kunci darurat yang kamu pilih.</string>
+    <string name="onboarding_feature_loud_title">Keras dan tak terlewat</string>
+    <string name="onboarding_feature_loud_body">Menembus mode hening dan layar kunci, dengan volume yang naik bertahap.</string>
+    <string name="onboarding_feature_toggle_title">Jeda dengan satu ketukan</string>
+    <string name="onboarding_feature_toggle_body">Sedang menangani pasien? Jeda siaga dari notifikasi atau Quick Settings.</string>
+    <string name="onboarding_privacy_title">Bagaimana WakeAlarm memakai datamu</string>
+    <string name="onboarding_privacy_body">Agar bisa bekerja, WakeAlarm perlu akses ke notifikasi di HP ini. Mohon baca sebelum melanjutkan.</string>
+    <string name="onboarding_privacy_read_title">Yang dibaca</string>
+    <string name="onboarding_privacy_read_body">Isi dan nama pengirim notifikasi dari WhatsApp dan WhatsApp Business. Notifikasi aplikasi lain diabaikan.</string>
+    <string name="onboarding_privacy_device_title">Diproses di HP ini</string>
+    <string name="onboarding_privacy_device_body">Pencocokan kata kunci terjadi sepenuhnya di perangkat, tanpa internet.</string>
+    <string name="onboarding_privacy_store_title">Yang disimpan</string>
+    <string name="onboarding_privacy_store_body">Hanya pesan yang memicu alarm (maksimal 30 terakhir) untuk riwayat. Bisa kamu hapus kapan saja.</string>
+    <string name="onboarding_privacy_share_title">Tidak dibagikan</string>
+    <string name="onboarding_privacy_share_body">Tidak ada data yang dikirim ke server, pihak ketiga, atau iklan.</string>
+    <string name="onboarding_permissions_title">Berikan izin</string>
+    <string name="onboarding_permissions_body">Ketuk \"Izinkan\" pada tiap item. Kamu akan dibawa ke pengaturan sistem — kembali ke sini setelah mengaktifkannya.</string>
+    <string name="onboarding_done_title">Siap siaga!</string>
+    <string name="onboarding_done_body">Semua izin wajib sudah diberikan. Beberapa tips sebelum mulai:</string>
+    <string name="onboarding_done_body_incomplete">Masih ada izin wajib yang belum diberikan — kamu bisa melengkapinya nanti dari beranda. Beberapa tips:</string>
+    <string name="onboarding_tip_standby_title">Aktifkan mode siaga</string>
+    <string name="onboarding_tip_standby_body">Siaga awalnya dijeda. Ketuk kartu besar di beranda untuk mengaktifkannya.</string>
+    <string name="onboarding_tip_test_title">Coba tes alarm</string>
+    <string name="onboarding_tip_test_body">Pastikan suara dan layar alarm muncul dengan benar di HP-mu.</string>
+    <string name="onboarding_tip_tile_title">Tambahkan ke Quick Settings</string>
+    <string name="onboarding_tip_tile_body">Untuk menjeda dan mengaktifkan siaga secepat menyalakan senter.</string>
+
+    <!-- Alarm screen -->
+    <string name="alarm_screen_title">Pesan darurat</string>
+    <string name="alarm_screen_title_test">Tes alarm</string>
+    <string name="alarm_screen_from">dari %1$s</string>
+    <string name="alarm_slide_to_stop">Geser untuk mematikan</string>
+    <string name="alarm_stop_and_open_chat">Matikan &amp; buka chat</string>
+
+    <!-- History -->
+    <string name="history_title">Riwayat alarm</string>
+    <string name="history_caption">Menampilkan hingga %1$d alarm terakhir. Disimpan hanya di HP ini.</string>
+    <string name="history_clear">Hapus riwayat</string>
+    <string name="history_clear_confirm_title">Hapus semua riwayat?</string>
+    <string name="history_clear_confirm_body">Isi pesan yang tersimpan akan dihapus permanen dari HP ini.</string>
+    <string name="history_empty_title">Belum ada alarm</string>
+    <string name="history_empty_body">Pesan yang membunyikan alarm akan muncul di sini, lengkap dengan waktunya.</string>
+</resources>

@@ -1,0 +1,30 @@
+package com.kindness.wakealarm.data
+
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+class AlarmHistoryCodecTest {
+
+    private val events = listOf(
+        AlarmEvent(1_700_000_000_000L, "Dr. Rina · Koas Anak", "Jaga malam \"urgent\", segera ke IGD", listOf("jaga", "urgent", "igd")),
+        AlarmEvent(1_699_000_000_000L, "", "code blue lantai 3\nsegera", listOf("code blue", "segera"))
+    )
+
+    @Test
+    fun `round trip preserves every field including quotes and newlines`() {
+        assertEquals(events, AlarmHistoryCodec.decode(AlarmHistoryCodec.encode(events)))
+    }
+
+    @Test
+    fun `empty or missing data decodes to empty list`() {
+        assertTrue(AlarmHistoryCodec.decode(null).isEmpty())
+        assertTrue(AlarmHistoryCodec.decode("").isEmpty())
+        assertTrue(AlarmHistoryCodec.decode(AlarmHistoryCodec.encode(emptyList())).isEmpty())
+    }
+
+    @Test
+    fun `corrupt data decodes to empty list instead of crashing`() {
+        assertTrue(AlarmHistoryCodec.decode("{not json").isEmpty())
+    }
+}
