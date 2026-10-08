@@ -11,17 +11,12 @@ import android.text.format.DateFormat
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
@@ -30,26 +25,26 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Chat
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.AlarmOff
-import androidx.compose.material.icons.filled.NotificationsActive
+import androidx.compose.material.icons.outlined.MarkChatUnread
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -64,38 +59,56 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.kindness.wakealarm.R
 import com.kindness.wakealarm.service.AlarmForegroundService
 import com.kindness.wakealarm.service.AlarmForegroundService.AlarmRequest
+import com.kindness.wakealarm.ui.components.Companion3D
+import com.kindness.wakealarm.ui.components.CompanionMood
+import com.kindness.wakealarm.ui.components.HsrButton
+import com.kindness.wakealarm.ui.components.HsrButtonStyle
 import com.kindness.wakealarm.ui.components.KeywordPill
+import com.kindness.wakealarm.ui.components.StarfieldBackground
+import com.kindness.wakealarm.ui.components.hsrPanel
+import com.kindness.wakealarm.ui.components.rememberHaptics
 import com.kindness.wakealarm.ui.theme.AlarmAccent
-import com.kindness.wakealarm.ui.theme.AlarmScreenBottom
-import com.kindness.wakealarm.ui.theme.AlarmScreenMid
-import com.kindness.wakealarm.ui.theme.AlarmScreenTop
+import com.kindness.wakealarm.ui.theme.Crimson
+import com.kindness.wakealarm.ui.theme.CrimsonDeep
+import com.kindness.wakealarm.ui.theme.Gold
+import com.kindness.wakealarm.ui.theme.GoldSoft
+import com.kindness.wakealarm.ui.theme.Ivory
+import com.kindness.wakealarm.ui.theme.Mist
+import com.kindness.wakealarm.ui.theme.OnCrimsonContainer
+import com.kindness.wakealarm.ui.theme.OnGold
+import com.kindness.wakealarm.ui.theme.OnVioletContainer
+import com.kindness.wakealarm.ui.theme.PanelLow
+import com.kindness.wakealarm.ui.theme.Spacing
+import com.kindness.wakealarm.ui.theme.VioletContainer
 import com.kindness.wakealarm.ui.theme.WakeAlarmTheme
+import com.kindness.wakealarm.ui.theme.WakeType
+import com.kindness.wakealarm.util.AppLocale
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
@@ -113,8 +126,15 @@ class AlarmTriggerActivity : ComponentActivity() {
 
     private var request by mutableStateOf<AlarmRequest?>(null)
 
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(AppLocale.wrap(newBase))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
-        enableEdgeToEdge()
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
+        )
         super.onCreate(savedInstanceState)
         showOverLockscreen()
 
@@ -138,7 +158,7 @@ class AlarmTriggerActivity : ComponentActivity() {
         }
 
         setContent {
-            WakeAlarmTheme(darkTheme = true) {
+            WakeAlarmTheme {
                 AlarmScreen(
                     request = request,
                     onDismiss = ::dismissAlarm,
@@ -222,19 +242,7 @@ private fun AlarmScreen(
     onOpenChat: () -> Unit
 ) {
     val context = LocalContext.current
-    val pulse = rememberInfiniteTransition(label = "alarm_pulse")
-    val pulseScale by pulse.animateFloat(
-        initialValue = 1f,
-        targetValue = 1.15f,
-        animationSpec = infiniteRepeatable(tween(800, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-        label = "pulse_scale"
-    )
-    val glowAlpha by pulse.animateFloat(
-        initialValue = 0.2f,
-        targetValue = 0.55f,
-        animationSpec = infiniteRepeatable(tween(800, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-        label = "glow_alpha"
-    )
+    val extraMatches by AlarmForegroundService.extraMatchesFlow.collectAsStateWithLifecycle()
 
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(Unit) {
@@ -244,125 +252,107 @@ private fun AlarmScreen(
         }
     }
     val timeText = DateFormat.getTimeFormat(context).format(now)
+    val isTest = request?.isTest == true
 
-    Box(
-        Modifier
-            .fillMaxSize()
-            .background(Brush.verticalGradient(listOf(AlarmScreenTop, AlarmScreenMid, AlarmScreenBottom)))
-    ) {
+    StarfieldBackground(Modifier.fillMaxSize(), nebula = 2.6f, nebulaColor = AlarmAccent) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .safeDrawingPadding()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp, vertical = 16.dp),
+                .padding(horizontal = Spacing.xl, vertical = Spacing.lg),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(20.dp)
+            verticalArrangement = Arrangement.spacedBy(Spacing.md)
         ) {
-            Spacer(Modifier.height(16.dp))
             Text(
-                timeText,
-                style = MaterialTheme.typography.displayLarge,
-                color = Color.White
+                stringResource(if (isTest) R.string.alarm_screen_title_test else R.string.alarm_screen_title).uppercase(),
+                style = WakeType.eyebrow,
+                color = if (isTest) GoldSoft else AlarmAccent,
+                modifier = Modifier.semantics { heading() }
             )
+            Text(timeText, style = MaterialTheme.typography.displayLarge, color = Ivory)
 
-            Box(contentAlignment = Alignment.Center) {
-                Box(
-                    Modifier
-                        .size(120.dp)
-                        .scale(pulseScale)
-                        .clip(CircleShape)
-                        .background(AlarmAccent.copy(alpha = glowAlpha))
-                )
-                Box(
-                    Modifier
-                        .size(84.dp)
-                        .clip(CircleShape)
-                        .background(Brush.linearGradient(listOf(Color(0xFFFF6B81), Color(0xFFD50032)))),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(Icons.Filled.NotificationsActive, contentDescription = null, tint = Color.White, modifier = Modifier.size(40.dp))
-                }
-            }
+            Companion3D(size = 176.dp, mood = CompanionMood.Alarm)
 
-            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            if (!request?.sender.isNullOrBlank()) {
                 Text(
-                    stringResource(if (request?.isTest == true) R.string.alarm_screen_title_test else R.string.alarm_screen_title),
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Color.White,
+                    stringResource(R.string.alarm_screen_from, request!!.sender),
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = Ivory,
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.semantics { heading() }
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
-                if (!request?.sender.isNullOrBlank()) {
-                    Text(
-                        stringResource(R.string.alarm_screen_from, request!!.sender),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = Color.White.copy(alpha = 0.85f),
-                        textAlign = TextAlign.Center,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
             }
 
             if (request != null) {
                 Column(
                     Modifier
                         .fillMaxWidth()
-                        .clip(MaterialTheme.shapes.large)
-                        .background(Color.White.copy(alpha = 0.10f))
-                        .padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                        .hsrPanel(MaterialTheme.shapes.large, PanelLow.copy(alpha = 0.78f), AlarmAccent)
+                        .padding(Spacing.gutter),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.md)
                 ) {
                     if (request.message.isNotBlank()) {
                         Text(
                             request.message,
                             style = MaterialTheme.typography.bodyLarge,
-                            color = Color.White,
+                            color = Ivory,
                             maxLines = 6,
                             overflow = TextOverflow.Ellipsis
                         )
                     }
                     if (request.matchedKeywords.isNotEmpty()) {
                         FlowRow(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+                            verticalArrangement = Arrangement.spacedBy(Spacing.sm)
                         ) {
                             request.matchedKeywords.forEach { kw ->
-                                KeywordPill(kw.uppercase(), container = AlarmAccent.copy(alpha = 0.3f), content = Color(0xFFFFE3E7))
+                                KeywordPill(kw.uppercase(), container = Crimson.copy(alpha = 0.3f), content = OnCrimsonContainer)
                             }
                         }
                     }
                 }
             }
 
-            Spacer(Modifier.weight(1f, fill = false))
-
-            SlideToStop(label = stringResource(R.string.alarm_slide_to_stop), onComplete = onDismiss)
-
-            if (request?.chatIntent != null) {
-                OutlinedButton(
-                    onClick = onOpenChat,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 56.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
-                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.5f))
+            if (extraMatches > 0) {
+                Row(
+                    Modifier
+                        .clip(MaterialTheme.shapes.small)
+                        .background(VioletContainer.copy(alpha = 0.85f))
+                        .padding(horizontal = Spacing.md, vertical = Spacing.sm)
+                        .semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite },
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Icon(Icons.Outlined.MarkChatUnread, contentDescription = null, tint = OnVioletContainer, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(Spacing.sm))
                     Text(
-                        stringResource(R.string.alarm_stop_and_open_chat),
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(start = 8.dp)
+                        pluralStringResource(R.plurals.alarm_extra_matches, extraMatches, extraMatches),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = OnVioletContainer
                     )
                 }
             }
 
+            Spacer(Modifier.weight(1f, fill = false))
+            Spacer(Modifier.height(Spacing.sm))
+
+            SlideToStop(label = stringResource(R.string.alarm_slide_to_stop), onComplete = onDismiss)
+
+            if (request?.chatIntent != null) {
+                HsrButton(
+                    text = stringResource(R.string.alarm_stop_and_open_chat),
+                    onClick = onOpenChat,
+                    style = HsrButtonStyle.Secondary,
+                    icon = Icons.AutoMirrored.Filled.Chat,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
             Text(
                 stringResource(R.string.tagline),
-                style = MaterialTheme.typography.labelSmall,
-                color = Color.White.copy(alpha = 0.5f),
+                style = MaterialTheme.typography.labelMedium,
+                color = Mist.copy(alpha = 0.6f),
                 textAlign = TextAlign.Center
             )
         }
@@ -370,13 +360,14 @@ private fun AlarmScreen(
 }
 
 /**
- * Drag the thumb to the end to stop. Prevents pocket/half-asleep accidental dismissal while
- * remaining one deliberate gesture. Accessibility services get a plain click action.
+ * Drag the gold thumb to the end to stop. Prevents pocket/half-asleep accidental dismissal while
+ * remaining one deliberate gesture; ticks at each quarter so the hand feels the progress.
+ * Accessibility services get a plain click action.
  */
 @Composable
 private fun SlideToStop(label: String, onComplete: () -> Unit) {
     val density = LocalDensity.current
-    val haptics = LocalHapticFeedback.current
+    val haptics = rememberHaptics()
     val scope = rememberCoroutineScope()
     val thumbSize = 64.dp
     val padding = 6.dp
@@ -384,12 +375,14 @@ private fun SlideToStop(label: String, onComplete: () -> Unit) {
     val maxOffset = with(density) { (trackWidthPx - (thumbSize + padding * 2).toPx()).coerceAtLeast(0f) }
     val offset = remember { Animatable(0f) }
     var completed by remember { mutableStateOf(false) }
+    var lastQuarter by remember { mutableIntStateOf(0) }
     val progress = if (maxOffset > 0f) offset.value / maxOffset else 0f
+    val trackShape = CutCornerShape(topEnd = 16.dp, bottomStart = 16.dp)
 
     fun complete() {
         if (completed) return
         completed = true
-        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+        haptics.confirm()
         onComplete()
     }
 
@@ -397,8 +390,9 @@ private fun SlideToStop(label: String, onComplete: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .height(thumbSize + padding * 2)
-            .clip(CircleShape)
-            .background(Color.White.copy(alpha = 0.14f))
+            .clip(trackShape)
+            .background(Brush.horizontalGradient(listOf(CrimsonDeep.copy(alpha = 0.85f), Crimson.copy(alpha = 0.55f))), trackShape)
+            .border(1.dp, Brush.linearGradient(listOf(Gold.copy(alpha = 0.7f), Gold.copy(alpha = 0.15f))), trackShape)
             .onSizeChanged { trackWidthPx = it.width }
             .semantics(mergeDescendants = true) {
                 role = Role.Button
@@ -410,41 +404,51 @@ private fun SlideToStop(label: String, onComplete: () -> Unit) {
             },
         contentAlignment = Alignment.CenterStart
     ) {
-        Text(
-            label,
-            style = MaterialTheme.typography.titleMedium,
-            color = Color.White,
-            textAlign = TextAlign.Center,
-            modifier = Modifier
+        Row(
+            Modifier
                 .fillMaxWidth()
-                .padding(start = thumbSize + padding)
-                .alpha((1f - progress * 1.4f).coerceIn(0f, 1f))
-        )
+                .padding(start = thumbSize + padding * 2, end = Spacing.lg)
+                .alpha((1f - progress * 1.4f).coerceIn(0f, 1f)),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Text(label.uppercase(), style = MaterialTheme.typography.labelLarge, color = Color.White)
+            Spacer(Modifier.width(Spacing.xs))
+            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = Color.White.copy(alpha = 0.8f))
+        }
         Box(
             modifier = Modifier
                 .offset { IntOffset(offset.value.roundToInt(), 0) }
                 .padding(padding)
                 .size(thumbSize)
-                .clip(CircleShape)
-                .background(Color.White)
+                .clip(MaterialTheme.shapes.small)
+                .background(Brush.verticalGradient(listOf(Color(0xFFF6DC9C), Gold, Color(0xFFD9B055))))
                 .draggable(
                     orientation = Orientation.Horizontal,
                     enabled = !completed,
                     state = rememberDraggableState { delta ->
-                        scope.launch { offset.snapTo((offset.value + delta).coerceIn(0f, maxOffset)) }
+                        scope.launch {
+                            offset.snapTo((offset.value + delta).coerceIn(0f, maxOffset))
+                            val quarter = if (maxOffset > 0f) (offset.value / maxOffset * 4f).toInt() else 0
+                            if (quarter != lastQuarter) {
+                                lastQuarter = quarter
+                                haptics.tick()
+                            }
+                        }
                     },
                     onDragStopped = {
                         if (offset.value >= maxOffset * 0.8f) {
                             offset.animateTo(maxOffset)
                             complete()
                         } else {
+                            lastQuarter = 0
                             offset.animateTo(0f)
                         }
                     }
                 ),
             contentAlignment = Alignment.Center
         ) {
-            Icon(Icons.Filled.AlarmOff, contentDescription = null, tint = Color(0xFFC4002B), modifier = Modifier.size(28.dp))
+            Icon(Icons.Filled.AlarmOff, contentDescription = null, tint = OnGold, modifier = Modifier.size(28.dp))
         }
     }
 }

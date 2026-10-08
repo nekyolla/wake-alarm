@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- English. Same keys as values/strings.xml except the translatable="false" ones. -->
+<resources>
+    <!-- Actions -->
+    <string name="action_stop_alarm">Stop alarm</string>
+    <string name="action_pause">Pause</string>
+    <string name="action_resume">Turn on</string>
+    <string name="action_fix_now">Fix</string>
+    <string name="action_reconnect">Reconnect</string>
+    <string name="action_manage_keywords">Manage keywords</string>
+    <string name="action_test_alarm">Test alarm</string>
+    <string name="action_add_tile">Quick Settings</string>
+    <string name="action_allow">Allow</string>
+    <string name="action_open_autostart">Open Autostart</string>
+    <string name="action_pick_file">Audio file</string>
+    <string name="action_pick_system">System sound</string>
+    <string name="action_preview">Play</string>
+    <string name="action_stop_preview">Stop</string>
+    <string name="action_reset_default">Default</string>
+    <string name="action_undo">Undo</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_get_started">Get started</string>
+    <string name="action_agree_continue">Agree &amp; continue</string>
+    <string name="action_decline">Not now</string>
+    <string name="action_continue">Continue</string>
+    <string name="action_skip_for_now">Skip for now</string>
+    <string name="action_start_using">Enter WakeAlarm</string>
+    <string name="action_standby_on">Turn on standby</string>
+    <string name="action_standby_off">Pause standby</string>
+    <string name="action_enable_anyway">Turn on anyway</string>
+
+    <!-- Accessibility -->
+    <string name="cd_back">Back</string>
+    <string name="cd_add_keyword">Add keyword</string>
+    <string name="cd_remove_keyword">Remove %1$s</string>
+
+    <!-- Bottom navigation -->
+    <string name="tab_home">Home</string>
+    <string name="tab_keywords">Keywords</string>
+    <string name="tab_history">History</string>
+    <string name="tab_settings">Settings</string>
+
+    <!-- Greetings -->
+    <string name="greeting_morning">Good morning, Trailblazer</string>
+    <string name="greeting_afternoon">Good afternoon, Trailblazer</string>
+    <string name="greeting_evening">Good evening, Trailblazer</string>
+    <string name="greeting_night">Good night, Trailblazer</string>
+
+    <!-- Notifications -->
+    <string name="channel_alarm_name">Emergency alarm</string>
+    <string name="channel_alarm_desc">Rings when an urgent message arrives</string>
+    <string name="channel_status_name">Standby status</string>
+    <string name="channel_status_desc">Standby status and pause button</string>
+    <string name="alarm_notif_title">Urgent message</string>
+    <string name="alarm_notif_title_sender">Urgent from %1$s</string>
+    <string name="alarm_notif_keywords">Keywords: %1$s</string>
+    <string name="status_notif_on">Standby on</string>
+    <string name="status_notif_off">Standby paused</string>
+
+    <!-- Quick Settings tile -->
+    <string name="tile_label">Standby</string>
+    <string name="tile_on">On</string>
+    <string name="tile_off">Paused</string>
+    <string name="tile_already_added">Tile already added</string>
+
+    <!-- Home -->
+    <string name="standby_title">Standby</string>
+    <string name="standby_state_on">On</string>
+    <string name="standby_state_off">Paused</string>
+    <string name="standby_desc_on">Rings loudly on urgent messages, even on silent.</string>
+    <string name="standby_desc_on_not_ready">On, but something isn\'t ready.</string>
+    <string name="standby_desc_off">Messages are watched, but the alarm won\'t ring.</string>
+    <string name="readiness_permissions">Access</string>
+    <string name="readiness_listener">Watching</string>
+    <string name="readiness_keywords">Keywords</string>
+    <string name="readiness_ok_cd">%1$s: ready</string>
+    <string name="readiness_fix_cd">%1$s: needs fixing</string>
+    <plurals name="home_setup_incomplete_title">
+        <item quantity="one">%1$d required permission missing</item>
+        <item quantity="other">%1$d required permissions missing</item>
+    </plurals>
+    <string name="home_setup_incomplete_body">Without them the alarm may not ring.</string>
+    <string name="home_listener_disconnected_title">Watching stopped</string>
+    <string name="home_listener_disconnected_body">Reconnect, then check battery access.</string>
+    <string name="home_keywords_insufficient_title">The alarm can\'t ring</string>
+    <string name="home_keywords_insufficient_body">%1$d keywords on, at least %2$d needed.</string>
+    <string name="home_alarm_ringing_title">Alarm ringing</string>
+    <string name="home_alarm_ringing_body">An urgent message came in.</string>
+    <string name="stat_active_keywords">Active keywords</string>
+    <string name="stat_threshold">Threshold</string>
+    <string name="stat_threshold_cd">Threshold: %1$d keywords per message</string>
+    <string name="stat_last_alarm">Last alarm</string>
+    <string name="time_just_now">Just now</string>
+    <string name="time_minutes_ago">%1$d min ago</string>
+    <string name="time_hours_ago">%1$d h ago</string>
+    <string name="time_days_ago">%1$d d ago</string>
+    <string name="snack_standby_on">Standby on</string>
+    <string name="snack_standby_off">Standby paused</string>
+    <string name="snack_test_failed">Test couldn\'t start. Check notification access.</string>
+    <string name="not_ready_title">Not ready yet</string>
+    <string name="not_ready_body">The alarm may not ring because:</string>
+    <string name="not_ready_permissions">Required permissions are missing</string>
+    <string name="not_ready_listener">Notification watching stopped</string>
+    <string name="not_ready_keywords">Fewer active keywords than the threshold</string>
+    <string name="privacy_short">Messages are only checked on this phone.</string>
+    <string name="test_alarm_message">This is a test. Slide to stop.</string>
+    <string name="test_alarm_keywords">test, alarm</string>
+
+    <!-- Keywords -->
+    <string name="keywords_title">Keywords</string>
+    <plurals name="keywords_summary_title">
+        <item quantity="one">%1$d active keyword</item>
+        <item quantity="other">%1$d active keywords</item>
+    </plurals>
+    <string name="keywords_summary_body">Rings when ≥%1$d keywords are in one message.</string>
+    <string name="tester_title">Test a message</string>
+    <string name="tester_placeholder">e.g. Koas segera ke IGD, urgent</string>
+    <string name="tester_would_ring">Would ring (%1$d/%2$d match)</string>
+    <string name="tester_would_not_ring">Won\'t ring (%1$d/%2$d match)</string>
+    <string name="keywords_custom_section">Your keywords</string>
+    <string name="keywords_custom_supporting">Tap to remove.</string>
+    <string name="keywords_custom_empty">None yet. Add one below.</string>
+    <string name="keywords_input_label">New keyword</string>
+    <string name="keywords_input_placeholder">e.g. bangsal anak</string>
+    <string name="keywords_input_hint">Matched as a whole word.</string>
+    <string name="keywords_preset_section">Built-in</string>
+    <string name="keywords_preset_supporting">Pick the ones that fit your ward.</string>
+    <string name="keyword_error_empty">Can\'t be empty</string>
+    <string name="keyword_error_short">At least %1$d characters</string>
+    <string name="keyword_error_long">At most %1$d characters</string>
+    <string name="keyword_error_no_letters">Needs a letter or number</string>
+    <string name="keyword_error_duplicate">Already added</string>
+    <string name="keyword_added">\"%1$s\" added</string>
+    <string name="keyword_removed">\"%1$s\" removed</string>
+    <string name="snack_below_threshold">%1$d keywords left, threshold %2$d. The alarm can\'t ring.</string>
+    <string name="preset_jaga">On-call shift</string>
+    <string name="preset_urgent">Urgent message</string>
+    <string name="preset_segera">Act now</string>
+    <string name="preset_dokter">Doctor call</string>
+    <string name="preset_coass">Clerkship student call</string>
+    <string name="preset_igd">Emergency room</string>
+    <string name="preset_emergency">Emergency</string>
+    <string name="preset_panggilan">General call</string>
+    <string name="preset_pasien">About a patient</string>
+    <string name="preset_operasi">Surgery</string>
+    <string name="preset_kritis">Critical condition</string>
+    <string name="preset_code_blue">Cardiac arrest</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_section_sensitivity">Sensitivity</string>
+    <string name="settings_threshold_title">Keywords per message</string>
+    <string name="settings_threshold_value">≥%1$d</string>
+    <string name="settings_threshold_sensitive">Sensitive</string>
+    <string name="settings_threshold_strict">Strict</string>
+    <string name="settings_threshold_hint_1">One keyword is enough. More false alarms.</string>
+    <string name="settings_threshold_hint_2">Two different keywords. Recommended.</string>
+    <string name="settings_threshold_hint_many">%1$d different keywords. Rings less often.</string>
+    <string name="settings_threshold_warning">Only %1$d keywords on. The alarm can\'t ring.</string>
+    <string name="settings_section_sound">Sound</string>
+    <string name="settings_ringtone_label">Alarm sound</string>
+    <string name="settings_ringtone_unavailable">File can\'t be opened. The default sound will play.</string>
+    <string name="settings_preview_note">Preview uses your current volume. Real alarms always play at full volume.</string>
+    <string name="settings_ramp_title">Gradual volume</string>
+    <string name="settings_ramp_desc">Soft to full in about 5 seconds</string>
+    <string name="settings_vibrate_title">Vibrate</string>
+    <string name="settings_vibrate_desc">Vibrate with the sound</string>
+    <string name="settings_section_language">Language</string>
+    <string name="language_system">System</string>
+    <string name="settings_section_about">About</string>
+    <string name="settings_replay_onboarding">Intro</string>
+    <string name="settings_replay_onboarding_desc">Replay the intro and permission check</string>
+    <string name="settings_version">Version</string>
+    <string name="ringtone_default">Default alarm sound</string>
+    <string name="ringtone_custom_fallback">Custom audio</string>
+    <string name="ringtone_system_fallback">System sound</string>
+    <string name="snack_ringtone_saved">Alarm sound saved</string>
+    <string name="snack_ringtone_fallback">File can\'t play. Using the default sound.</string>
+    <string name="snack_ringtone_none">No sound could be played.</string>
+    <string name="privacy_title">Privacy</string>
+    <string name="privacy_full">Only WhatsApp notifications are read, and everything is processed on this phone. History isn\'t backed up. No data is sent anywhere.</string>
+
+    <!-- Permissions -->
+    <string name="permissions_title">Permissions</string>
+    <string name="permissions_progress">%1$d of %2$d permissions on</string>
+    <string name="permissions_progress_label">permissions on</string>
+    <string name="permissions_required_section">Required</string>
+    <string name="permissions_required_supporting">So the alarm can ring.</string>
+    <string name="permissions_recommended_section">Recommended</string>
+    <string name="permissions_recommended_supporting">So the alarm is more reliable.</string>
+    <string name="perm_granted">Allowed</string>
+    <string name="perm_listener_title">Notification access</string>
+    <string name="perm_listener_desc">Reads WhatsApp messages</string>
+    <string name="perm_notifications_title">Notifications</string>
+    <string name="perm_notifications_desc">Shows the alarm and status</string>
+    <string name="perm_fullscreen_title">Full-screen alarm</string>
+    <string name="perm_fullscreen_desc">Shows on the lock screen</string>
+    <string name="perm_battery_title">No battery limits</string>
+    <string name="perm_battery_desc">Keeps watching while the phone sleeps</string>
+    <string name="perm_overlay_title">Display over apps</string>
+    <string name="perm_overlay_desc">Opens the alarm while you use the phone</string>
+    <string name="perm_dnd_title">Do Not Disturb access</string>
+    <string name="perm_dnd_desc">Rings during Do Not Disturb</string>
+    <string name="permissions_xiaomi_title">Xiaomi / Redmi / POCO</string>
+    <string name="permissions_xiaomi_body">Turn on Autostart and set battery to \"No restrictions\".</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_step_of">Step %1$d of %2$d</string>
+    <string name="onboarding_welcome_eyebrow">Welcome, Trailblazer</string>
+    <string name="onboarding_welcome_title">Never miss an emergency call</string>
+    <string name="onboarding_welcome_body">WakeAlarm wakes you when an urgent WhatsApp message arrives.</string>
+    <string name="onboarding_feature_keywords_title">Only what matters</string>
+    <string name="onboarding_feature_keywords_body">Rings only on messages with emergency keywords.</string>
+    <string name="onboarding_feature_loud_title">Loud and hard to miss</string>
+    <string name="onboarding_feature_loud_body">Breaks through silent mode and the lock screen.</string>
+    <string name="onboarding_feature_toggle_title">One-tap pause</string>
+    <string name="onboarding_feature_toggle_body">From the notification or Quick Settings.</string>
+    <string name="onboarding_privacy_title">Privacy</string>
+    <string name="onboarding_privacy_body">WakeAlarm needs notification access. Here\'s what happens to your data:</string>
+    <string name="onboarding_privacy_read_title">What\'s read</string>
+    <string name="onboarding_privacy_read_body">Only WhatsApp and WhatsApp Business notifications.</string>
+    <string name="onboarding_privacy_device_title">On this phone only</string>
+    <string name="onboarding_privacy_device_body">Matched without internet.</string>
+    <string name="onboarding_privacy_store_title">What\'s saved</string>
+    <string name="onboarding_privacy_store_body">Up to 30 messages that rang. You can delete them.</string>
+    <string name="onboarding_privacy_share_title">Never shared</string>
+    <string name="onboarding_privacy_share_body">No servers, ads or third parties.</string>
+    <string name="onboarding_permissions_title">Grant access</string>
+    <string name="onboarding_permissions_body">Tap \"Allow\", turn it on, then come back here.</string>
+    <string name="onboarding_done_title">Ready for standby!</string>
+    <string name="onboarding_done_body">All required permissions are on. Tips:</string>
+    <string name="onboarding_done_body_incomplete">Some required permissions are missing. Finish them later from Home. Tips:</string>
+    <string name="onboarding_tip_standby_title">Turn on standby</string>
+    <string name="onboarding_tip_standby_body">Standby starts paused.</string>
+    <string name="onboarding_tip_test_title">Try a test alarm</string>
+    <string name="onboarding_tip_test_body">Check that the sound and screen appear.</string>
+    <string name="onboarding_tip_tile_title">Add to Quick Settings</string>
+    <string name="onboarding_tip_tile_body">Pause and resume as fast as a flashlight.</string>
+
+    <!-- Alarm screen -->
+    <string name="alarm_screen_title">Urgent message</string>
+    <string name="alarm_screen_title_test">Test alarm</string>
+    <string name="alarm_screen_from">from %1$s</string>
+    <string name="alarm_slide_to_stop">Slide to stop</string>
+    <string name="alarm_stop_and_open_chat">Stop &amp; open chat</string>
+    <plurals name="alarm_extra_matches">
+        <item quantity="one">+%1$d more urgent message · see History</item>
+        <item quantity="other">+%1$d more urgent messages · see History</item>
+    </plurals>
+
+    <!-- History -->
+    <string name="history_title">History</string>
+    <string name="history_caption">Last %1$d urgent messages, on this phone only.</string>
+    <string name="history_clear">Clear history</string>
+    <string name="history_clear_confirm_title">Clear all history?</string>
+    <string name="history_clear_confirm_body">Saved messages will be deleted for good.</string>
+    <string name="history_empty_title">No alarms yet</string>
+    <string name="history_empty_body">Urgent messages will show up here.</string>
+    <string name="history_while_ringing">During alarm</string>
+</resources>

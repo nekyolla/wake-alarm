@@ -1,26 +1,26 @@
 package com.kindness.wakealarm.ui.history
 
 import android.app.Application
-import android.text.format.DateUtils
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.DeleteSweep
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -36,8 +36,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
@@ -49,12 +53,23 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kindness.wakealarm.R
 import com.kindness.wakealarm.data.AlarmEvent
 import com.kindness.wakealarm.data.AlarmHistoryRepository
+import com.kindness.wakealarm.ui.components.DiamondGlyph
 import com.kindness.wakealarm.ui.components.KeywordPill
 import com.kindness.wakealarm.ui.components.WakeTopBar
+import com.kindness.wakealarm.ui.components.hsrPanel
+import com.kindness.wakealarm.ui.theme.Gold
+import com.kindness.wakealarm.ui.theme.GoldSoft
+import com.kindness.wakealarm.ui.theme.Mist
+import com.kindness.wakealarm.ui.theme.OnVioletContainer
+import com.kindness.wakealarm.ui.theme.Spacing
+import com.kindness.wakealarm.ui.theme.Violet
+import com.kindness.wakealarm.ui.theme.VioletContainer
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.text.DateFormat
+import java.util.Date
 
 class HistoryViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = AlarmHistoryRepository(application)
@@ -69,16 +84,17 @@ class HistoryViewModel(application: Application) : AndroidViewModel(application)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HistoryScreen(onBack: () -> Unit, viewModel: HistoryViewModel = viewModel()) {
+fun HistoryScreen(viewModel: HistoryViewModel = viewModel()) {
     val events by viewModel.events.collectAsStateWithLifecycle()
     var confirmClear by remember { mutableStateOf(false) }
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        containerColor = MaterialTheme.colorScheme.background,
+        containerColor = Color.Transparent,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
-            WakeTopBar(stringResource(R.string.history_title), onBack = onBack, scrollBehavior = scrollBehavior) {
+            WakeTopBar(stringResource(R.string.history_title), scrollBehavior = scrollBehavior) {
                 if (!events.isNullOrEmpty()) {
                     IconButton(onClick = { confirmClear = true }) {
                         Icon(Icons.Outlined.DeleteSweep, contentDescription = stringResource(R.string.history_clear))
@@ -95,17 +111,19 @@ fun HistoryScreen(onBack: () -> Unit, viewModel: HistoryViewModel = viewModel())
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding),
-                contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 32.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                contentPadding = PaddingValues(start = Spacing.gutter, end = Spacing.gutter, top = Spacing.xs, bottom = Spacing.xxl)
             ) {
                 item {
                     Text(
                         stringResource(R.string.history_caption, AlarmHistoryRepository.MAX_EVENTS),
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = Mist,
+                        modifier = Modifier.padding(bottom = Spacing.md)
                     )
                 }
-                itemsIndexed(list, key = { index, event -> "$index-${event.timestamp}" }) { _, event -> HistoryItem(event) }
+                itemsIndexed(list, key = { index, event -> "$index-${event.timestamp}" }) { index, event ->
+                    HistoryItem(event, isLast = index == list.lastIndex)
+                }
             }
         }
     }
@@ -124,31 +142,63 @@ fun HistoryScreen(onBack: () -> Unit, viewModel: HistoryViewModel = viewModel())
             },
             dismissButton = {
                 TextButton(onClick = { confirmClear = false }) { Text(stringResource(R.string.action_cancel)) }
-            }
+            },
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
         )
     }
 }
 
+/** One entry on the timeline: a diamond node and line on the left, the message panel on the right. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun HistoryItem(event: AlarmEvent) {
-    val context = LocalContext.current
-    val whenText = remember(event.timestamp) {
-        DateUtils.formatDateTime(
-            context, event.timestamp,
-            DateUtils.FORMAT_SHOW_DATE or DateUtils.FORMAT_SHOW_TIME or DateUtils.FORMAT_SHOW_WEEKDAY or
-                DateUtils.FORMAT_ABBREV_ALL
-        )
+private fun HistoryItem(event: AlarmEvent, isLast: Boolean) {
+    val locale = LocalConfiguration.current.locales[0]
+    val whenText = remember(event.timestamp, locale) {
+        DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT, locale).format(Date(event.timestamp))
     }
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .semantics(mergeDescendants = true) {},
-        shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+    Row(
+        Modifier.drawBehind {
+            // Timeline line from below this node down to the next one
+            if (!isLast) {
+                val x = 10.dp.toPx()
+                drawLine(
+                    Brush.verticalGradient(listOf(GoldSoft.copy(alpha = 0.5f), GoldSoft.copy(alpha = 0.1f))),
+                    start = Offset(x, (Spacing.lg + 14.dp).toPx()),
+                    end = Offset(x, size.height),
+                    strokeWidth = 1.dp.toPx()
+                )
+            }
+        }
     ) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(whenText, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+        Column(Modifier.width(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Spacer(Modifier.height(Spacing.lg))
+            DiamondGlyph(if (event.whileRinging) Violet else Gold, 12.dp)
+        }
+        Spacer(Modifier.width(Spacing.md))
+        Column(
+            Modifier
+                .weight(1f)
+                .padding(bottom = Spacing.md)
+                .hsrPanel(MaterialTheme.shapes.large, ornament = false)
+                .semantics(mergeDescendants = true) {}
+                .padding(Spacing.lg),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    whenText,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = GoldSoft,
+                    modifier = Modifier.weight(1f)
+                )
+                if (event.whileRinging) {
+                    KeywordPill(
+                        text = stringResource(R.string.history_while_ringing),
+                        container = VioletContainer,
+                        content = OnVioletContainer
+                    )
+                }
+            }
             if (event.sender.isNotBlank()) {
                 Text(event.sender, style = MaterialTheme.typography.titleMedium)
             }
@@ -157,7 +207,7 @@ private fun HistoryItem(event: AlarmEvent) {
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalArrangement = Arrangement.spacedBy(6.dp),
-                    modifier = Modifier.padding(top = 4.dp)
+                    modifier = Modifier.padding(top = Spacing.xs)
                 ) {
                     event.keywords.forEach {
                         KeywordPill(
@@ -177,23 +227,23 @@ private fun EmptyHistory(modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(32.dp),
+            .padding(Spacing.xxl),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Icon(
             Icons.Outlined.History,
             contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            tint = Mist,
             modifier = Modifier.size(56.dp)
         )
-        Spacer(Modifier.height(16.dp))
-        Text(stringResource(R.string.history_empty_title), style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center)
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(Spacing.lg))
+        Text(stringResource(R.string.history_empty_title), style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
+        Spacer(Modifier.height(Spacing.xs))
         Text(
             stringResource(R.string.history_empty_body),
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = Mist,
             textAlign = TextAlign.Center
         )
     }

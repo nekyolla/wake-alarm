@@ -11,6 +11,7 @@ import com.kindness.wakealarm.data.SettingsRepository
 import com.kindness.wakealarm.receiver.PersistentToggleReceiver
 import com.kindness.wakealarm.service.AlarmForegroundService
 import com.kindness.wakealarm.service.WaNotificationListenerService
+import com.kindness.wakealarm.util.AppLocale
 import com.kindness.wakealarm.util.PermissionHelper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -36,9 +37,6 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     val threshold: StateFlow<Int> = settingsRepository.thresholdFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SettingsRepository.DEFAULT_THRESHOLD)
 
-    val customRingtoneTitle: StateFlow<String?> = settingsRepository.customRingtoneTitleFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
-
     val lastAlarm: StateFlow<AlarmEvent?> = historyRepository.eventsFlow
         .map { it.firstOrNull() }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
@@ -50,9 +48,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     val isListenerConnected: StateFlow<Boolean> = WaNotificationListenerService.isConnectedFlow
 
-    fun toggleMasterSwitch() {
+    fun setMasterSwitch(enabled: Boolean) {
         viewModelScope.launch {
-            settingsRepository.toggleMasterSwitch()
+            settingsRepository.setMasterSwitch(enabled)
             PersistentToggleReceiver.notifyMasterSwitchChanged(getApplication())
         }
     }
@@ -61,14 +59,16 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         AlarmForegroundService.stop()
     }
 
-    fun startTestAlarm() {
+    /** @return false when the system refused to start the alarm. */
+    fun startTestAlarm(): Boolean {
         val app = getApplication<Application>()
-        AlarmForegroundService.start(
+        val res = AppLocale.wrap(app)
+        return AlarmForegroundService.start(
             app,
             AlarmForegroundService.AlarmRequest(
-                matchedKeywords = listOf("tes", "alarm"),
-                message = app.getString(R.string.test_alarm_message),
-                sender = app.getString(R.string.app_name),
+                matchedKeywords = res.getString(R.string.test_alarm_keywords).split(",").map { it.trim() },
+                message = res.getString(R.string.test_alarm_message),
+                sender = res.getString(R.string.app_name),
                 isTest = true
             )
         )
