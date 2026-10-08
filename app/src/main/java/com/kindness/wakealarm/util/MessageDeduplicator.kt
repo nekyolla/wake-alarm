@@ -16,8 +16,11 @@ class MessageDeduplicator(
     private val maxMessagesPerKey: Int = 100
 ) {
 
-    /** @param timestamp sender timestamp from MessagingStyle, or null when only plain text is available. */
-    data class Message(val text: String, val timestamp: Long?) {
+    /**
+     * @param timestamp sender timestamp from MessagingStyle, or null when only plain text is available.
+     * @param sender display label of who wrote this bubble; not part of its identity.
+     */
+    data class Message(val text: String, val timestamp: Long?, val sender: String = "") {
         internal val id: String get() = if (timestamp != null) "$timestamp|$text" else text
     }
 

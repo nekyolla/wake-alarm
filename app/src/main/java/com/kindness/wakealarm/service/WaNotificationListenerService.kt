@@ -11,13 +11,20 @@ import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.core.app.Person
 import com.kindness.wakealarm.MainActivity
 import com.kindness.wakealarm.R
+import com.kindness.wakealarm.data.AlarmEvent
+import com.kindness.wakealarm.data.AlarmHistoryRepository
 import com.kindness.wakealarm.data.KeywordRepository
 import com.kindness.wakealarm.data.SettingsRepository
 import com.kindness.wakealarm.receiver.PersistentToggleReceiver
+import com.kindness.wakealarm.ui.theme.NotificationAccent
+import com.kindness.wakealarm.util.AppLocale
 import com.kindness.wakealarm.util.KeywordMatcher
 import com.kindness.wakealarm.util.MessageDeduplicator
+import com.kindness.wakealarm.util.TriggerPlanner
+import com.kindness.wakealarm.util.WhatsAppMessageParser
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -73,12 +80,14 @@ class WaNotificationListenerService : NotificationListenerService() {
     private val deduplicator = MessageDeduplicator()
     private lateinit var settingsRepository: SettingsRepository
     private lateinit var keywordRepository: KeywordRepository
+    private lateinit var historyRepository: AlarmHistoryRepository
 
     override fun onCreate() {
         super.onCreate()
         instance = this
         settingsRepository = SettingsRepository(applicationContext)
         keywordRepository = KeywordRepository(applicationContext)
+        historyRepository = AlarmHistoryRepository(applicationContext)
         createPersistentNotificationChannel()
         Log.d(TAG, "NotificationListenerService created")
     }
@@ -112,10 +121,9 @@ class WaNotificationListenerService : NotificationListenerService() {
         // Group summaries ("5 messages from 3 chats") repeat the per-chat notifications
         if (notification.flags and Notification.FLAG_GROUP_SUMMARY != 0) return
 
-        val extracted = extractMessages(notification)
         // Mark as seen synchronously, regardless of Master Switch state, so a bubble is
         // evaluated exactly once even when WhatsApp re-posts the notification.
-        val fresh = deduplicator.takeNew(sbn.key, extracted.messages)
+        val fresh = deduplicator.takeNew(sbn.key, extractMessages(notification))
         if (fresh.isEmpty()) return
 
         serviceScope.launch {
@@ -124,30 +132,41 @@ class WaNotificationListenerService : NotificationListenerService() {
                     Log.d(TAG, "Master switch OFF, skipping alarm trigger")
                     return@launch
                 }
-                if (AlarmForegroundService.isRunning()) {
-                    Log.d(TAG, "Alarm already running, skipping")
-                    return@launch
-                }
 
                 val keywords = keywordRepository.allActiveKeywordsFlow.first()
                 val threshold = settingsRepository.thresholdFlow.first()
 
                 // Evaluate each new bubble on its own, newest first
-                for (message in fresh.asReversed()) {
+                val triggered = fresh.asReversed().mapNotNull { message ->
                     val result = KeywordMatcher.match(message.text, keywords, threshold = threshold)
                     Log.d(TAG, "Bubble -> ${result.matchCount}/$threshold matches (${result.matchedKeywords})")
-                    if (result.isTriggered) {
-                        Log.i(TAG, "ALARM TRIGGERED. Matched: ${result.matchedKeywords}")
-                        triggerAlarm(
-                            AlarmForegroundService.AlarmRequest(
-                                matchedKeywords = result.matchedKeywords,
-                                message = message.text,
-                                sender = extracted.sender,
-                                chatIntent = notification.contentIntent
-                            )
+                    if (result.isTriggered) message to result.matchedKeywords else null
+                }
+
+                val plan = TriggerPlanner.plan(triggered, AlarmForegroundService.isRunning())
+                plan.ring?.let { (message, matched) ->
+                    Log.i(TAG, "ALARM TRIGGERED. Matched: $matched")
+                    triggerAlarm(
+                        AlarmForegroundService.AlarmRequest(
+                            matchedKeywords = matched,
+                            message = message.text,
+                            sender = message.sender,
+                            chatIntent = notification.contentIntent
                         )
-                        return@launch
-                    }
+                    )
+                }
+                // Only one alarm rings at a time; the others are kept so none is lost
+                plan.recordOnly.forEach { (message, matched) ->
+                    historyRepository.add(
+                        AlarmEvent(
+                            timestamp = System.currentTimeMillis(),
+                            sender = message.sender,
+                            message = message.text,
+                            keywords = matched,
+                            whileRinging = true
+                        )
+                    )
+                    AlarmForegroundService.reportExtraMatch()
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Error processing notification", e)
@@ -155,52 +174,35 @@ class WaNotificationListenerService : NotificationListenerService() {
         }
     }
 
-    private data class Extracted(val sender: String, val messages: List<MessageDeduplicator.Message>)
-
     /**
      * Pull individual message bubbles out of a WhatsApp notification.
-     * MessagingStyle is preferred (it carries per-message timestamps); plain text extras are
-     * only used when MessagingStyle is absent, so the same bubble is never counted twice.
+     * MessagingStyle is preferred (it carries per-message timestamps and senders); plain text
+     * extras are only used when MessagingStyle is absent, so the same bubble is never counted twice.
      */
-    private fun extractMessages(notification: Notification): Extracted {
+    private fun extractMessages(notification: Notification): List<MessageDeduplicator.Message> {
         val extras = notification.extras
         val title = extras.getCharSequence(Notification.EXTRA_TITLE)?.toString().orEmpty()
 
         val style = NotificationCompat.MessagingStyle.extractMessagingStyleFromNotification(notification)
         if (style != null && style.messages.isNotEmpty()) {
-            val userName = style.user.name?.toString()
-            val incoming = style.messages.filter { msg ->
-                // Skip replies the user sent from the notification itself
-                val name = msg.person?.name?.toString()
-                name == null || name != userName
-            }
-            val latest = incoming.lastOrNull()
-            val person = latest?.person?.name?.toString()
-            val conversation = style.conversationTitle?.toString()
-            val sender = when {
-                !conversation.isNullOrBlank() && !person.isNullOrBlank() -> "$person · $conversation"
-                !person.isNullOrBlank() -> person
-                else -> title
-            }
-            return Extracted(
-                sender = sender,
-                messages = incoming.mapNotNull { msg ->
-                    val text = msg.text?.toString()?.trim().orEmpty()
-                    if (text.isBlank()) null else MessageDeduplicator.Message(text, msg.timestamp)
-                }
+            return WhatsAppMessageParser.parseMessagingStyle(
+                messages = style.messages.map { msg ->
+                    WhatsAppMessageParser.RawMessage(msg.text?.toString(), msg.timestamp, msg.person?.toSender())
+                },
+                user = style.user.toSender(),
+                conversationTitle = style.conversationTitle?.toString(),
+                fallbackTitle = title
             )
         }
 
-        val texts = mutableListOf<String>()
-        extras.getCharSequenceArray(Notification.EXTRA_TEXT_LINES)?.forEach { line ->
-            val s = line.toString().trim()
-            if (s.isNotBlank() && s !in texts) texts.add(s)
-        }
-        val single = extras.getCharSequence(Notification.EXTRA_TEXT)?.toString()?.trim().orEmpty()
-        if (single.isNotBlank() && single !in texts) texts.add(single)
-
-        return Extracted(title, texts.map { MessageDeduplicator.Message(it, null) })
+        return WhatsAppMessageParser.parsePlainText(
+            title = title,
+            lines = extras.getCharSequenceArray(Notification.EXTRA_TEXT_LINES)?.map { it.toString() }.orEmpty(),
+            text = extras.getCharSequence(Notification.EXTRA_TEXT)?.toString()
+        )
     }
+
+    private fun Person.toSender() = WhatsAppMessageParser.Sender(name = name?.toString(), key = key)
 
     private fun triggerAlarm(request: AlarmForegroundService.AlarmRequest) {
         if (AlarmForegroundService.start(this, request)) return
@@ -215,12 +217,13 @@ class WaNotificationListenerService : NotificationListenerService() {
     // --- Persistent Notification with Master Switch Toggle ---
 
     private fun createPersistentNotificationChannel() {
+        val res = AppLocale.wrap(this)
         val channel = NotificationChannel(
             CHANNEL_ID_PERSISTENT,
-            getString(R.string.channel_status_name),
+            res.getString(R.string.channel_status_name),
             NotificationManager.IMPORTANCE_LOW
         ).apply {
-            description = getString(R.string.channel_status_desc)
+            description = res.getString(R.string.channel_status_desc)
             setShowBadge(false)
         }
 
@@ -232,6 +235,8 @@ class WaNotificationListenerService : NotificationListenerService() {
         serviceScope.launch {
             try {
                 val masterEnabled = settingsRepository.masterSwitchFlow.first()
+                // Re-create the channel so its name follows a language change
+                createPersistentNotificationChannel()
                 val notification = buildPersistentNotification(masterEnabled)
                 val nm = getSystemService(NotificationManager::class.java)
                 nm.notify(NOTIFICATION_ID_PERSISTENT, notification)
@@ -242,6 +247,7 @@ class WaNotificationListenerService : NotificationListenerService() {
     }
 
     private fun buildPersistentNotification(masterEnabled: Boolean): Notification {
+        val res = AppLocale.wrap(this)
         val openAppIntent = PendingIntent.getActivity(
             this, 0,
             Intent(this, MainActivity::class.java),
@@ -256,13 +262,14 @@ class WaNotificationListenerService : NotificationListenerService() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val statusText = getString(if (masterEnabled) R.string.status_notif_on else R.string.status_notif_off)
-        val toggleLabel = getString(if (masterEnabled) R.string.action_pause else R.string.action_resume)
+        val statusText = res.getString(if (masterEnabled) R.string.status_notif_on else R.string.status_notif_off)
+        val toggleLabel = res.getString(if (masterEnabled) R.string.action_pause else R.string.action_resume)
         val icon = if (masterEnabled) R.drawable.ic_stat_alarm else R.drawable.ic_stat_alarm_off
 
         return NotificationCompat.Builder(this, CHANNEL_ID_PERSISTENT)
             .setSmallIcon(icon)
-            .setContentTitle(getString(R.string.app_name))
+            .setColor(NotificationAccent)
+            .setContentTitle(res.getString(R.string.app_name))
             .setContentText(statusText)
             .setContentIntent(openAppIntent)
             .setOngoing(true)

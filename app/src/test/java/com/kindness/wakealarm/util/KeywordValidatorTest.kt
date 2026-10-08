@@ -30,6 +30,18 @@ class KeywordValidatorTest {
     }
 
     @Test
+    fun `rejects punctuation only keywords`() {
+        assertEquals(Result.NoLetterOrDigit, KeywordValidator.validate("--", emptyList()))
+        assertEquals(Result.NoLetterOrDigit, KeywordValidator.validate("! !", emptyList()))
+    }
+
+    @Test
+    fun `accepts keywords mixing punctuation and letters`() {
+        assertEquals(Result.Valid("dr."), KeywordValidator.validate("Dr.", emptyList()))
+        assertEquals(Result.Valid("#igd"), KeywordValidator.validate("#IGD", emptyList()))
+    }
+
+    @Test
     fun `rejects duplicates regardless of case or spacing`() {
         assertEquals(Result.Duplicate, KeywordValidator.validate("IGD", listOf("igd")))
         assertEquals(Result.Duplicate, KeywordValidator.validate("code  blue", listOf("Code Blue")))

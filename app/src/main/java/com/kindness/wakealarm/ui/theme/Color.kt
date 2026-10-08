@@ -63,3 +63,6 @@ val AlarmScreenTop = Color(0xFF9B0020)
 val AlarmScreenMid = Color(0xFF3A0610)
 val AlarmScreenBottom = Color(0xFF0D0D11)
 val AlarmAccent = Color(0xFFFF4D6A)
+
+/** ARGB accent for notifications (NotificationCompat.Builder.setColor). */
+val NotificationAccent: Int = 0xFFE8364F.toInt()

@@ -21,6 +21,8 @@ import com.kindness.wakealarm.data.AlarmEvent
 import com.kindness.wakealarm.data.AlarmHistoryRepository
 import com.kindness.wakealarm.data.SettingsRepository
 import com.kindness.wakealarm.ui.alarm.AlarmTriggerActivity
+import com.kindness.wakealarm.ui.theme.NotificationAccent
+import com.kindness.wakealarm.util.AppLocale
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -96,7 +98,15 @@ class AlarmForegroundService : Service() {
         private val _isAlarmRunningFlow = MutableStateFlow(false)
         val isAlarmRunningFlow: StateFlow<Boolean> = _isAlarmRunningFlow.asStateFlow()
 
+        /** Urgent messages that arrived while this alarm was already ringing (recorded, not rung). */
+        private val _extraMatchesFlow = MutableStateFlow(0)
+        val extraMatchesFlow: StateFlow<Int> = _extraMatchesFlow.asStateFlow()
+
         fun isRunning(): Boolean = _isAlarmRunningFlow.value
+
+        fun reportExtraMatch() {
+            if (_isAlarmRunningFlow.value) _extraMatchesFlow.value += 1
+        }
 
         /**
          * Start the alarm. The running flag flips immediately so a second notification arriving
@@ -106,6 +116,7 @@ class AlarmForegroundService : Service() {
          */
         fun start(context: Context, request: AlarmRequest): Boolean {
             _isAlarmRunningFlow.value = true
+            _extraMatchesFlow.value = 0
             val intent = request.writeTo(Intent(context, AlarmForegroundService::class.java))
                 .putExtra(EXTRA_GENERATION, startGeneration.incrementAndGet())
             return try {
@@ -122,16 +133,18 @@ class AlarmForegroundService : Service() {
         fun stop() {
             cancelledGeneration = startGeneration.get()
             _isAlarmRunningFlow.value = false
+            _extraMatchesFlow.value = 0
             instance?.shutdown()
         }
 
         fun createChannel(context: Context) {
+            val res = AppLocale.wrap(context)
             val channel = NotificationChannel(
                 CHANNEL_ID_ALARM,
-                context.getString(R.string.channel_alarm_name),
+                res.getString(R.string.channel_alarm_name),
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = context.getString(R.string.channel_alarm_desc)
+                description = res.getString(R.string.channel_alarm_desc)
                 enableVibration(false) // Vibration handled by AlarmSoundPlayer
                 lockscreenVisibility = Notification.VISIBILITY_PUBLIC
                 setSound(null, null) // Sound handled by AlarmSoundPlayer
@@ -148,6 +161,7 @@ class AlarmForegroundService : Service() {
             request: AlarmRequest,
             startServiceOnOpen: Boolean = false
         ): Notification {
+            val res = AppLocale.wrap(context)
             val fullScreenIntent = request.writeTo(Intent(context, AlarmTriggerActivity::class.java)).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
                 putExtra(AlarmTriggerActivity.EXTRA_START_SERVICE, startServiceOnOpen)
@@ -164,16 +178,17 @@ class AlarmForegroundService : Service() {
             )
 
             val title = if (request.sender.isNotBlank()) {
-                context.getString(R.string.alarm_notif_title_sender, request.sender)
+                res.getString(R.string.alarm_notif_title_sender, request.sender)
             } else {
-                context.getString(R.string.alarm_notif_title)
+                res.getString(R.string.alarm_notif_title)
             }
 
             return NotificationCompat.Builder(context, CHANNEL_ID_ALARM)
                 .setSmallIcon(R.drawable.ic_stat_alarm)
+                .setColor(NotificationAccent)
                 .setContentTitle(title)
                 .setContentText(
-                    context.getString(R.string.alarm_notif_keywords, request.matchedKeywords.joinToString(", "))
+                    res.getString(R.string.alarm_notif_keywords, request.matchedKeywords.joinToString(", "))
                 )
                 .setStyle(NotificationCompat.BigTextStyle().bigText(request.message))
                 .setPriority(NotificationCompat.PRIORITY_MAX)
@@ -185,7 +200,7 @@ class AlarmForegroundService : Service() {
                 .setDeleteIntent(dismissPendingIntent)
                 .setOngoing(true)
                 .setAutoCancel(false)
-                .addAction(R.drawable.ic_stat_alarm_off, context.getString(R.string.action_stop_alarm), dismissPendingIntent)
+                .addAction(R.drawable.ic_stat_alarm_off, res.getString(R.string.action_stop_alarm), dismissPendingIntent)
                 .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
                 .build()
         }
@@ -208,6 +223,7 @@ class AlarmForegroundService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == ACTION_STOP_ALARM) {
             _isAlarmRunningFlow.value = false
+            _extraMatchesFlow.value = 0
             shutdown()
             return START_NOT_STICKY
         }
@@ -289,6 +305,7 @@ class AlarmForegroundService : Service() {
 
     override fun onDestroy() {
         _isAlarmRunningFlow.value = false
+        _extraMatchesFlow.value = 0
         serviceScope.cancel()
         soundPlayer?.stop()
         soundPlayer = null

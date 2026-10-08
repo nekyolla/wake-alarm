@@ -8,6 +8,7 @@ import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
 import com.kindness.wakealarm.R
 import com.kindness.wakealarm.data.SettingsRepository
+import com.kindness.wakealarm.util.AppLocale
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -54,12 +55,13 @@ class MasterSwitchTileService : TileService() {
 
     private fun render(enabled: Boolean) {
         val tile = qsTile ?: return
+        val res = AppLocale.wrap(this)
         tile.state = if (enabled) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
-        tile.label = getString(R.string.tile_label)
+        tile.label = res.getString(R.string.tile_label)
         tile.icon = Icon.createWithResource(this, if (enabled) R.drawable.ic_stat_alarm else R.drawable.ic_stat_alarm_off)
-        tile.contentDescription = getString(if (enabled) R.string.tile_on else R.string.tile_off)
+        tile.contentDescription = res.getString(if (enabled) R.string.tile_on else R.string.tile_off)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            tile.subtitle = getString(if (enabled) R.string.tile_on else R.string.tile_off)
+            tile.subtitle = res.getString(if (enabled) R.string.tile_on else R.string.tile_off)
         }
         tile.updateTile()
     }
