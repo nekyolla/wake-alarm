@@ -77,6 +77,7 @@ import com.kindness.wakealarm.ui.components.SwitchRow
 import com.kindness.wakealarm.ui.components.WakeSnackbarHost
 import com.kindness.wakealarm.ui.components.WakeTopBar
 import com.kindness.wakealarm.ui.components.applyLanguage
+import com.kindness.wakealarm.ui.components.readableWidth
 import com.kindness.wakealarm.ui.theme.Gold
 import com.kindness.wakealarm.ui.theme.Mist
 import com.kindness.wakealarm.ui.theme.Spacing
@@ -168,7 +169,8 @@ fun SettingsScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = Spacing.gutter),
+                .padding(horizontal = Spacing.gutter)
+                .readableWidth(),
             verticalArrangement = Arrangement.spacedBy(Spacing.md)
         ) {
             SectionHeader(stringResource(R.string.settings_section_sensitivity))

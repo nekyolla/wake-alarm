@@ -11,15 +11,21 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.isImeVisible
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
@@ -40,7 +46,6 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -108,10 +113,14 @@ object Routes {
     val TABS = listOf(HOME, KEYWORDS, HISTORY, SETTINGS)
 }
 
-/** Switch tabs like a bottom bar should: one copy per tab, each keeping its own state. */
+/**
+ * Switch tabs like a bottom bar should: one copy per tab, each keeping its own state.
+ * Pops to Home rather than the graph's start destination, which is Onboarding on first run and
+ * no longer on the back stack after it finishes.
+ */
 private fun NavHostController.navigateToTab(route: String) {
     navigate(route) {
-        popUpTo(graph.findStartDestination().id) { saveState = true }
+        popUpTo(Routes.HOME) { saveState = true }
         launchSingleTop = true
         restoreState = true
     }
@@ -146,8 +155,9 @@ fun WakeAlarmApp(appViewModel: AppViewModel = viewModel()) {
             bottomBar = {
                 AnimatedVisibility(
                     visible = showBottomBar,
-                    enter = slideInVertically { it } + fadeIn(),
-                    exit = slideOutVertically { it } + fadeOut()
+                    // Animate the reserved height too, so content doesn't jump when the bar hides
+                    enter = slideInVertically { it } + expandVertically() + fadeIn(),
+                    exit = slideOutVertically { it } + shrinkVertically() + fadeOut()
                 ) {
                     WakeBottomBar(tabs = tabs, selectedRoute = currentRoute, onSelect = navController::navigateToTab)
                 }
@@ -156,7 +166,10 @@ fun WakeAlarmApp(appViewModel: AppViewModel = viewModel()) {
             NavHost(
                 navController = navController,
                 startDestination = startDestination,
-                modifier = Modifier.padding(innerPadding),
+                modifier = Modifier
+                    .padding(innerPadding)
+                    // Landscape: keep content clear of a side navigation bar and display cutouts
+                    .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)),
                 enterTransition = { fadeIn(tween(220)) },
                 exitTransition = { fadeOut(tween(160)) },
                 popEnterTransition = { fadeIn(tween(220)) },

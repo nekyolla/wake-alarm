@@ -47,6 +47,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -63,6 +64,7 @@ import com.kindness.wakealarm.ui.components.IconBadge
 import com.kindness.wakealarm.ui.components.OnResume
 import com.kindness.wakealarm.ui.components.SectionHeader
 import com.kindness.wakealarm.ui.components.WakeTopBar
+import com.kindness.wakealarm.ui.components.readableWidth
 import com.kindness.wakealarm.ui.theme.Gold
 import com.kindness.wakealarm.ui.theme.Mist
 import com.kindness.wakealarm.ui.theme.PanelHighest
@@ -89,6 +91,7 @@ fun PermissionOnboardingScreen(
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = Spacing.gutter)
+                .readableWidth()
         ) {
             PermissionChecklist()
             Spacer(Modifier.height(Spacing.xxl))
@@ -229,32 +232,46 @@ private fun PermissionRow(permission: AppPermission, granted: Boolean, onGrant: 
         if (granted) status.successContainer else Gold.copy(alpha = 0.14f),
         label = "perm_badge"
     )
-    Row(
+    // On narrow screens or with large text, the button moves under the description so the
+    // permission names aren't squeezed into broken fragments
+    val config = LocalConfiguration.current
+    val stacked = config.screenWidthDp < 360 || config.fontScale > 1.15f
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 72.dp)
             .padding(horizontal = Spacing.lg, vertical = Spacing.md),
-        verticalAlignment = Alignment.CenterVertically
+        verticalArrangement = Arrangement.spacedBy(Spacing.sm)
     ) {
-        IconBadge(copy.icon, if (granted) status.success else Gold, badgeContainer)
-        Spacer(Modifier.width(Spacing.lg))
-        Column(Modifier.weight(1f)) {
-            Text(stringResource(copy.title), style = MaterialTheme.typography.titleMedium)
-            Text(stringResource(copy.description), style = MaterialTheme.typography.bodySmall, color = Mist)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconBadge(copy.icon, if (granted) status.success else Gold, badgeContainer)
+            Spacer(Modifier.width(Spacing.lg))
+            Column(Modifier.weight(1f)) {
+                Text(stringResource(copy.title), style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(copy.description), style = MaterialTheme.typography.bodySmall, color = Mist)
+            }
+            Spacer(Modifier.width(Spacing.md))
+            if (granted) {
+                Icon(
+                    Icons.Filled.CheckCircle,
+                    contentDescription = stringResource(R.string.perm_granted),
+                    tint = status.success,
+                    modifier = Modifier.size(28.dp)
+                )
+            } else if (!stacked) {
+                HsrButton(
+                    text = stringResource(R.string.action_allow),
+                    onClick = onGrant,
+                    minHeight = TouchTarget.min
+                )
+            }
         }
-        Spacer(Modifier.width(Spacing.md))
-        if (granted) {
-            Icon(
-                Icons.Filled.CheckCircle,
-                contentDescription = stringResource(R.string.perm_granted),
-                tint = status.success,
-                modifier = Modifier.size(28.dp)
-            )
-        } else {
+        if (!granted && stacked) {
             HsrButton(
                 text = stringResource(R.string.action_allow),
                 onClick = onGrant,
-                minHeight = TouchTarget.min
+                minHeight = TouchTarget.min,
+                modifier = Modifier.fillMaxWidth()
             )
         }
     }

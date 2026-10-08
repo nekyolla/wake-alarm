@@ -50,12 +50,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -67,6 +69,7 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -84,6 +87,7 @@ import com.kindness.wakealarm.ui.components.StatTile
 import com.kindness.wakealarm.ui.components.WakeSnackbarHost
 import com.kindness.wakealarm.ui.components.WakeTopBar
 import com.kindness.wakealarm.ui.components.hsrPanel
+import com.kindness.wakealarm.ui.components.readableWidth
 import com.kindness.wakealarm.ui.components.rememberHaptics
 import com.kindness.wakealarm.ui.theme.Gold
 import com.kindness.wakealarm.ui.theme.GoldSoft
@@ -123,12 +127,17 @@ fun HomeScreen(
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
-    var confirmNotReady by remember { mutableStateOf(false) }
+    var confirmNotReady by rememberSaveable { mutableStateOf(false) }
+
+    // null while the first disk read is in flight: show placeholders, not a false warning
+    val count = keywordsCount
+    val minimum = threshold
+    val keywordsShort = count != null && minimum != null && count < minimum
 
     val issues = buildList {
         if (!permissionStatus.requiredGranted) add(Issue.Permissions)
         else if (!listenerConnected) add(Issue.Listener)
-        if (keywordsCount < threshold) add(Issue.Keywords)
+        if (keywordsShort) add(Issue.Keywords)
     }
 
     val snackStandbyOn = stringResource(R.string.snack_standby_on)
@@ -168,7 +177,8 @@ fun HomeScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = Spacing.gutter),
+                .padding(horizontal = Spacing.gutter)
+                .readableWidth(),
             verticalArrangement = Arrangement.spacedBy(Spacing.md)
         ) {
             Spacer(Modifier.height(Spacing.xs))
@@ -203,7 +213,7 @@ fun HomeScreen(
                     tone = BannerTone.Alarm,
                     icon = Icons.Outlined.Key,
                     title = stringResource(R.string.home_keywords_insufficient_title),
-                    body = stringResource(R.string.home_keywords_insufficient_body, keywordsCount, threshold),
+                    body = stringResource(R.string.home_keywords_insufficient_body, count ?: 0, minimum ?: 0),
                     actionLabel = stringResource(R.string.action_manage_keywords),
                     onAction = onNavigateToKeywords
                 )
@@ -232,17 +242,17 @@ fun HomeScreen(
             ) {
                 StatTile(
                     label = stringResource(R.string.stat_active_keywords),
-                    value = keywordsCount.toString(),
-                    valueColor = if (keywordsCount < threshold) MaterialTheme.statusColors.alarm else MaterialTheme.colorScheme.onSurface,
+                    value = count?.toString() ?: "—",
+                    valueColor = if (keywordsShort) MaterialTheme.statusColors.alarm else MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight()
                 )
-                val thresholdDescription = stringResource(R.string.stat_threshold_cd, threshold)
+                val thresholdDescription = stringResource(R.string.stat_threshold_cd, minimum ?: 0)
                 StatTile(
                     label = stringResource(R.string.stat_threshold),
-                    value = "≥$threshold",
-                    footer = { RarityStars(threshold, size = 11.dp) },
+                    value = minimum?.let { "≥$it" } ?: "—",
+                    footer = { RarityStars(minimum ?: 0, size = 11.dp) },
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight()
@@ -250,7 +260,7 @@ fun HomeScreen(
                 )
                 StatTile(
                     label = stringResource(R.string.stat_last_alarm),
-                    value = lastAlarm?.let { relativeTime(it.timestamp) } ?: "—",
+                    value = lastAlarm?.let { shortRelativeTime(it.timestamp) } ?: "—",
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight()
@@ -259,7 +269,10 @@ fun HomeScreen(
                 )
             }
 
-            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
+            Row(
+                modifier = Modifier.height(IntrinsicSize.Min),
+                horizontalArrangement = Arrangement.spacedBy(Spacing.md)
+            ) {
                 HsrButton(
                     text = stringResource(R.string.action_test_alarm),
                     onClick = {
@@ -271,7 +284,9 @@ fun HomeScreen(
                     style = HsrButtonStyle.Secondary,
                     icon = Icons.Outlined.NotificationsActive,
                     enabled = !isAlarmActive,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
                 )
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     HsrButton(
@@ -291,7 +306,9 @@ fun HomeScreen(
                         },
                         style = HsrButtonStyle.Secondary,
                         icon = Icons.Outlined.Dashboard,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
                     )
                 }
             }
@@ -332,15 +349,18 @@ private fun greetingRes(): Int = when (Calendar.getInstance().get(Calendar.HOUR_
     else -> R.string.greeting_night
 }
 
-/** Short "5 min ago"-style label in the app's language (DateUtils would use the system language). */
+/**
+ * Compact "59m / 3h / 2d"-style age that fits a stat tile, in the app's language
+ * (DateUtils would use the system language and is too long for the tile).
+ */
 @Composable
-private fun relativeTime(timestamp: Long): String {
+private fun shortRelativeTime(timestamp: Long): String {
     val minutes = ((System.currentTimeMillis() - timestamp) / 60_000L).coerceAtLeast(0L).toInt()
     return when {
-        minutes < 1 -> stringResource(R.string.time_just_now)
-        minutes < 60 -> stringResource(R.string.time_minutes_ago, minutes)
-        minutes < 24 * 60 -> stringResource(R.string.time_hours_ago, minutes / 60)
-        else -> stringResource(R.string.time_days_ago, minutes / (24 * 60))
+        minutes < 1 -> stringResource(R.string.time_short_now)
+        minutes < 60 -> stringResource(R.string.time_short_minutes, minutes)
+        minutes < 24 * 60 -> stringResource(R.string.time_short_hours, minutes / 60)
+        else -> stringResource(R.string.time_short_days, minutes / (24 * 60))
     }
 }
 
@@ -397,7 +417,15 @@ private fun StandbyHero(
             .padding(horizontal = Spacing.gutter, vertical = Spacing.lg),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Companion3D(size = 168.dp)
+        // Smaller on short screens so the standby button stays in view without scrolling
+        val screenHeight = LocalConfiguration.current.screenHeightDp
+        Companion3D(
+            size = when {
+                screenHeight < 700 -> 104.dp
+                screenHeight < 800 -> 136.dp
+                else -> 168.dp
+            }
+        )
         Text(stringResource(R.string.standby_title).uppercase(), style = WakeType.eyebrow, color = GoldSoft)
         Text(
             stateText.uppercase(),
@@ -435,7 +463,12 @@ private fun StandbyHero(
 /** Three checks at a glance; a failing one can be tapped to fix it. */
 @Composable
 private fun ReadinessRow(issues: List<Issue>, onFix: (Issue) -> Unit) {
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .height(IntrinsicSize.Min),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
+    ) {
         listOf(
             Issue.Permissions to R.string.readiness_permissions,
             Issue.Listener to R.string.readiness_listener,
@@ -446,9 +479,11 @@ private fun ReadinessRow(issues: List<Issue>, onFix: (Issue) -> Unit) {
             val description = stringResource(if (ok) R.string.readiness_ok_cd else R.string.readiness_fix_cd, label)
             val status = MaterialTheme.statusColors
             val tint = if (ok) status.success else status.warning
-            Row(
+            // Icon above the label so "Kata kunci" fits on narrow phones and at large font sizes
+            Column(
                 Modifier
                     .weight(1f)
+                    .fillMaxHeight()
                     .heightIn(min = TouchTarget.min)
                     .clip(MaterialTheme.shapes.small)
                     .then(if (ok) Modifier else Modifier.clickable { onFix(issue) })
@@ -458,13 +493,13 @@ private fun ReadinessRow(issues: List<Issue>, onFix: (Issue) -> Unit) {
                         accent = tint,
                         ornament = false
                     )
-                    .padding(horizontal = Spacing.sm, vertical = Spacing.sm)
+                    .padding(horizontal = Spacing.xs, vertical = Spacing.sm)
                     .clearAndSetSemantics {
                         contentDescription = description
                         if (!ok) role = Role.Button
                     },
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
                 Icon(
                     if (ok) Icons.Filled.CheckCircle else Icons.Outlined.ErrorOutline,
@@ -472,8 +507,15 @@ private fun ReadinessRow(issues: List<Issue>, onFix: (Issue) -> Unit) {
                     tint = tint,
                     modifier = Modifier.size(16.dp)
                 )
-                Spacer(Modifier.width(Spacing.xs))
-                Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurface, maxLines = 1)
+                Spacer(Modifier.height(Spacing.xxs))
+                Text(
+                    label,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
         }
     }

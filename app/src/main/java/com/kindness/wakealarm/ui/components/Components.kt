@@ -24,6 +24,8 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.selection.toggleable
@@ -73,6 +75,7 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -191,6 +194,16 @@ fun Modifier.hsrPanel(
         drawLine(dim, Offset(size.width - w / 2, size.height - len), Offset(size.width - w / 2, size.height), w)
     }
 }
+
+/**
+ * Keeps screen content at a readable width on tablets, foldables and landscape: up to 600dp,
+ * centered. On phones in portrait it simply fills the width.
+ */
+fun Modifier.readableWidth(): Modifier = this
+    .fillMaxWidth()
+    .wrapContentWidth(Alignment.CenterHorizontally)
+    .widthIn(max = 600.dp)
+    .fillMaxWidth()
 
 /** A small diamond, the app's recurring ornament (from the card suits on the mascot's crown). */
 @Composable
@@ -317,7 +330,15 @@ fun WakeBottomBar(tabs: List<BottomTab>, selectedRoute: String?, onSelect: (Stri
                         tint = tint,
                         modifier = Modifier.size(22.dp)
                     )
-                    Text(tab.label, style = MaterialTheme.typography.labelMedium, color = tint, maxLines = 1)
+                    Text(
+                        tab.label,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = tint,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(horizontal = Spacing.xs)
+                    )
                 }
             }
         }
@@ -534,7 +555,7 @@ fun HsrButton(
                 haptics.tap()
                 onClick()
             }
-            .padding(horizontal = Spacing.gutter, vertical = Spacing.sm),
+            .padding(horizontal = Spacing.lg, vertical = Spacing.sm),
         contentAlignment = Alignment.Center
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
@@ -546,7 +567,9 @@ fun HsrButton(
                 text.uppercase(),
                 style = MaterialTheme.typography.labelLarge,
                 color = content,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
             )
         }
     }
@@ -618,9 +641,22 @@ fun StatTile(
             .padding(horizontal = 14.dp, vertical = Spacing.md),
         verticalArrangement = Arrangement.spacedBy(2.dp)
     ) {
-        Text(value, style = WakeType.numeral, color = valueColor, maxLines = 1)
+        Text(
+            value,
+            style = WakeType.numeral,
+            color = valueColor,
+            maxLines = 1,
+            softWrap = false,
+            overflow = TextOverflow.Ellipsis
+        )
         if (footer != null) footer()
-        Text(label, style = MaterialTheme.typography.labelMedium, color = Mist, maxLines = 2)
+        Text(
+            label,
+            style = MaterialTheme.typography.labelMedium,
+            color = Mist,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 

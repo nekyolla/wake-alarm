@@ -47,10 +47,21 @@ class MasterSwitchTileService : TileService() {
     override fun onClick() {
         super.onClick()
         scope.launch {
-            val enabled = settingsRepository.toggleMasterSwitch()
-            render(enabled)
-            WaNotificationListenerService.updatePersistentNotification()
+            val turningOff = settingsRepository.masterSwitchFlow.first()
+            // Turning standby on is always one tap; turning it off from a secure lock screen asks
+            // for the PIN first, so nobody else can silence the alarm by pulling down Quick Settings.
+            if (turningOff && isLocked && isSecure) {
+                unlockAndRun { scope.launch { toggle() } }
+            } else {
+                toggle()
+            }
         }
+    }
+
+    private suspend fun toggle() {
+        val enabled = settingsRepository.toggleMasterSwitch()
+        render(enabled)
+        WaNotificationListenerService.updatePersistentNotification()
     }
 
     private fun render(enabled: Boolean) {

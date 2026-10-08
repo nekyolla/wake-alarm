@@ -2,6 +2,7 @@ package com.kindness.wakealarm.ui.history
 
 import android.app.Application
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -33,6 +35,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,6 +48,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -57,6 +61,7 @@ import com.kindness.wakealarm.ui.components.DiamondGlyph
 import com.kindness.wakealarm.ui.components.KeywordPill
 import com.kindness.wakealarm.ui.components.WakeTopBar
 import com.kindness.wakealarm.ui.components.hsrPanel
+import com.kindness.wakealarm.ui.components.readableWidth
 import com.kindness.wakealarm.ui.theme.Gold
 import com.kindness.wakealarm.ui.theme.GoldSoft
 import com.kindness.wakealarm.ui.theme.Mist
@@ -86,7 +91,7 @@ class HistoryViewModel(application: Application) : AndroidViewModel(application)
 @Composable
 fun HistoryScreen(viewModel: HistoryViewModel = viewModel()) {
     val events by viewModel.events.collectAsStateWithLifecycle()
-    var confirmClear by remember { mutableStateOf(false) }
+    var confirmClear by rememberSaveable { mutableStateOf(false) }
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 
     Scaffold(
@@ -109,7 +114,8 @@ fun HistoryScreen(viewModel: HistoryViewModel = viewModel()) {
             list.isEmpty() -> EmptyHistory(Modifier.padding(padding))
             else -> LazyColumn(
                 modifier = Modifier
-                    .fillMaxSize()
+                    .fillMaxHeight()
+                    .readableWidth()
                     .padding(padding),
                 contentPadding = PaddingValues(start = Spacing.gutter, end = Spacing.gutter, top = Spacing.xs, bottom = Spacing.xxl)
             ) {
@@ -156,6 +162,8 @@ private fun HistoryItem(event: AlarmEvent, isLast: Boolean) {
     val whenText = remember(event.timestamp, locale) {
         DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT, locale).format(Date(event.timestamp))
     }
+    // Long messages are cut at 4 lines; tapping the card shows the full text
+    var expanded by rememberSaveable(event.timestamp) { mutableStateOf(false) }
     Row(
         Modifier.drawBehind {
             // Timeline line from below this node down to the next one
@@ -180,16 +188,23 @@ private fun HistoryItem(event: AlarmEvent, isLast: Boolean) {
                 .weight(1f)
                 .padding(bottom = Spacing.md)
                 .hsrPanel(MaterialTheme.shapes.large, ornament = false)
+                .clickable(onClickLabel = stringResource(if (expanded) R.string.cd_collapse else R.string.cd_expand)) {
+                    expanded = !expanded
+                }
                 .semantics(mergeDescendants = true) {}
                 .padding(Spacing.lg),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            // Wraps instead of squeezing the date when the "during alarm" pill doesn't fit beside it
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+                verticalArrangement = Arrangement.spacedBy(Spacing.xs)
+            ) {
                 Text(
                     whenText,
                     style = MaterialTheme.typography.labelMedium,
                     color = GoldSoft,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.align(Alignment.CenterVertically)
                 )
                 if (event.whileRinging) {
                     KeywordPill(
@@ -202,7 +217,12 @@ private fun HistoryItem(event: AlarmEvent, isLast: Boolean) {
             if (event.sender.isNotBlank()) {
                 Text(event.sender, style = MaterialTheme.typography.titleMedium)
             }
-            Text(event.message, style = MaterialTheme.typography.bodyMedium, maxLines = 4)
+            Text(
+                event.message,
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = if (expanded) Int.MAX_VALUE else 4,
+                overflow = TextOverflow.Ellipsis
+            )
             if (event.keywords.isNotEmpty()) {
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),

@@ -76,7 +76,10 @@ class AlarmForegroundService : Service() {
 
     companion object {
         private const val TAG = "AlarmService"
-        const val CHANNEL_ID_ALARM = "alarm_channel"
+        // v2: the first channel was created with a PUBLIC lock-screen visibility, which an app can't
+        // change afterwards, so it is replaced by one that respects the redacted public version.
+        const val CHANNEL_ID_ALARM = "alarm_channel_v2"
+        private const val LEGACY_CHANNEL_ID_ALARM = "alarm_channel"
         const val NOTIFICATION_ID_ALARM = 2001
         const val ACTION_STOP_ALARM = "com.kindness.wakealarm.ACTION_STOP_ALARM"
         const val EXTRA_MATCHED_KEYWORDS = "matched_keywords"
@@ -146,10 +149,12 @@ class AlarmForegroundService : Service() {
             ).apply {
                 description = res.getString(R.string.channel_alarm_desc)
                 enableVibration(false) // Vibration handled by AlarmSoundPlayer
-                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+                lockscreenVisibility = Notification.VISIBILITY_PRIVATE
                 setSound(null, null) // Sound handled by AlarmSoundPlayer
             }
-            context.getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
+            val nm = context.getSystemService(NotificationManager::class.java)
+            nm.deleteNotificationChannel(LEGACY_CHANNEL_ID_ALARM)
+            nm.createNotificationChannel(channel)
         }
 
         /**
@@ -183,17 +188,26 @@ class AlarmForegroundService : Service() {
                 res.getString(R.string.alarm_notif_title)
             }
 
+            val keywordsText = res.getString(R.string.alarm_notif_keywords, request.matchedKeywords.joinToString(", "))
+            // What a locked screen shows: no sender, no message, so patient details stay private
+            val publicVersion = NotificationCompat.Builder(context, CHANNEL_ID_ALARM)
+                .setSmallIcon(R.drawable.ic_stat_alarm)
+                .setColor(NotificationAccent)
+                .setContentTitle(res.getString(R.string.alarm_notif_title))
+                .setContentText(keywordsText)
+                .setCategory(NotificationCompat.CATEGORY_ALARM)
+                .build()
+
             return NotificationCompat.Builder(context, CHANNEL_ID_ALARM)
                 .setSmallIcon(R.drawable.ic_stat_alarm)
                 .setColor(NotificationAccent)
                 .setContentTitle(title)
-                .setContentText(
-                    res.getString(R.string.alarm_notif_keywords, request.matchedKeywords.joinToString(", "))
-                )
+                .setContentText(keywordsText)
                 .setStyle(NotificationCompat.BigTextStyle().bigText(request.message))
                 .setPriority(NotificationCompat.PRIORITY_MAX)
                 .setCategory(NotificationCompat.CATEGORY_ALARM)
-                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+                .setPublicVersion(publicVersion)
                 .setContentIntent(fullScreenPendingIntent)
                 .setFullScreenIntent(fullScreenPendingIntent, true)
                 // In case an OEM lets the user swipe the ongoing notification away
@@ -211,6 +225,8 @@ class AlarmForegroundService : Service() {
     private lateinit var historyRepository: AlarmHistoryRepository
     private var soundPlayer: AlarmSoundPlayer? = null
     private var wakeLock: PowerManager.WakeLock? = null
+    /** Do Not Disturb filter to restore after the alarm, when we had to let alarms through. */
+    private var savedInterruptionFilter: Int? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -274,6 +290,7 @@ class AlarmForegroundService : Service() {
             )
             // A stop may have arrived while settings were loading
             if (!_isAlarmRunningFlow.value) return@launch
+            letAlarmsThroughDnd()
             soundPlayer?.stop()
             soundPlayer = AlarmSoundPlayer(this@AlarmForegroundService).apply { start(options) }
 
@@ -292,9 +309,47 @@ class AlarmForegroundService : Service() {
         return START_NOT_STICKY
     }
 
+    /**
+     * With "Do Not Disturb access", make sure DND lets alarms through while this one rings:
+     * "Total silence", or "Priority only" with alarms turned off, would otherwise mute it.
+     * Android 15+ turns this call into a separate DND rule that can't loosen the user's own
+     * stricter rule, so it is only used where it actually helps.
+     */
+    private fun letAlarmsThroughDnd() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM || savedInterruptionFilter != null) return
+        val nm = getSystemService(NotificationManager::class.java)
+        if (!nm.isNotificationPolicyAccessGranted) return
+        val filter = nm.currentInterruptionFilter
+        val alarmsBlocked = when (filter) {
+            NotificationManager.INTERRUPTION_FILTER_NONE -> true
+            NotificationManager.INTERRUPTION_FILTER_PRIORITY ->
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.P &&
+                    (nm.notificationPolicy.priorityCategories and NotificationManager.Policy.PRIORITY_CATEGORY_ALARMS) == 0
+            else -> false
+        }
+        if (!alarmsBlocked) return
+        try {
+            nm.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_ALARMS)
+            savedInterruptionFilter = filter
+        } catch (e: SecurityException) {
+            Log.w(TAG, "Unable to change Do Not Disturb", e)
+        }
+    }
+
+    private fun restoreDnd() {
+        val filter = savedInterruptionFilter ?: return
+        savedInterruptionFilter = null
+        try {
+            getSystemService(NotificationManager::class.java).setInterruptionFilter(filter)
+        } catch (e: SecurityException) {
+            Log.w(TAG, "Unable to restore Do Not Disturb", e)
+        }
+    }
+
     private fun shutdown() {
         soundPlayer?.stop()
         soundPlayer = null
+        restoreDnd()
         wakeLock?.let { if (it.isHeld) it.release() }
         wakeLock = null
         stopForeground(STOP_FOREGROUND_REMOVE)
@@ -309,6 +364,7 @@ class AlarmForegroundService : Service() {
         serviceScope.cancel()
         soundPlayer?.stop()
         soundPlayer = null
+        restoreDnd()
         wakeLock?.let { if (it.isHeld) it.release() }
         wakeLock = null
         instance = null
