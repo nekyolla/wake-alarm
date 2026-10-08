@@ -29,10 +29,17 @@ class KeywordViewModel(application: Application) : AndroidViewModel(application)
     val threshold: StateFlow<Int> = settingsRepository.thresholdFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SettingsRepository.DEFAULT_THRESHOLD)
 
-    fun togglePreset(keyword: String) {
+    /**
+     * Toggles a preset.
+     * @return true when this turns a preset off and leaves fewer active keywords than the
+     * threshold, i.e. the alarm could no longer ring. The screen warns and offers undo.
+     */
+    fun togglePreset(keyword: String): Boolean {
+        val turningOff = keyword in activePresets.value
         viewModelScope.launch {
             repository.togglePreset(keyword)
         }
+        return turningOff && activeKeywords.value.size - 1 < threshold.value
     }
 
     /**
@@ -49,10 +56,14 @@ class KeywordViewModel(application: Application) : AndroidViewModel(application)
         return result
     }
 
-    fun removeCustomKeyword(keyword: String) {
+    /**
+     * @return true when removing it leaves fewer active keywords than the threshold.
+     */
+    fun removeCustomKeyword(keyword: String): Boolean {
         viewModelScope.launch {
             repository.removeCustomKeyword(keyword)
         }
+        return activeKeywords.value.size - 1 < threshold.value
     }
 
     fun restoreCustomKeyword(keyword: String) {

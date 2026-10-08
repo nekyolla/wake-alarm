@@ -13,6 +13,8 @@ object KeywordValidator {
         data object Empty : Result
         data object TooShort : Result
         data object TooLong : Result
+        /** Only punctuation/symbols, e.g. "--": would match almost any message or none at all. */
+        data object NoLetterOrDigit : Result
         data object Duplicate : Result
     }
 
@@ -26,6 +28,7 @@ object KeywordValidator {
             normalized.isEmpty() -> Result.Empty
             normalized.length < MIN_LENGTH -> Result.TooShort
             normalized.length > MAX_LENGTH -> Result.TooLong
+            normalized.none { it.isLetterOrDigit() } -> Result.NoLetterOrDigit
             existing.any { normalize(it) == normalized } -> Result.Duplicate
             else -> Result.Valid(normalized)
         }

@@ -30,7 +30,6 @@ import androidx.compose.material.icons.outlined.NotificationsActive
 import androidx.compose.material.icons.outlined.PhoneAndroid
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -44,10 +43,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -57,10 +58,16 @@ import com.kindness.wakealarm.ui.components.Banner
 import com.kindness.wakealarm.ui.components.BannerTone
 import com.kindness.wakealarm.ui.components.GroupCard
 import com.kindness.wakealarm.ui.components.GroupDivider
+import com.kindness.wakealarm.ui.components.HsrButton
 import com.kindness.wakealarm.ui.components.IconBadge
 import com.kindness.wakealarm.ui.components.OnResume
 import com.kindness.wakealarm.ui.components.SectionHeader
 import com.kindness.wakealarm.ui.components.WakeTopBar
+import com.kindness.wakealarm.ui.theme.Gold
+import com.kindness.wakealarm.ui.theme.Mist
+import com.kindness.wakealarm.ui.theme.PanelHighest
+import com.kindness.wakealarm.ui.theme.Spacing
+import com.kindness.wakealarm.ui.theme.TouchTarget
 import com.kindness.wakealarm.ui.theme.statusColors
 import com.kindness.wakealarm.util.PermissionHelper
 import com.kindness.wakealarm.util.PermissionHelper.AppPermission
@@ -73,7 +80,7 @@ fun PermissionOnboardingScreen(
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        containerColor = MaterialTheme.colorScheme.background,
+        containerColor = Color.Transparent,
         topBar = { WakeTopBar(stringResource(R.string.permissions_title), onBack = onBack, scrollBehavior = scrollBehavior) }
     ) { padding ->
         Column(
@@ -81,10 +88,10 @@ fun PermissionOnboardingScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp)
+                .padding(horizontal = Spacing.gutter)
         ) {
             PermissionChecklist()
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(Spacing.xxl))
         }
     }
 }
@@ -127,21 +134,34 @@ fun PermissionChecklist(onStatusChange: (PermissionHelper.PermissionStatus) -> U
 
     val progress by animateFloatAsState(status.grantedCount.toFloat() / status.totalCount, label = "perm_progress")
     val progressText = stringResource(R.string.permissions_progress, status.grantedCount, status.totalCount)
+    val success = MaterialTheme.statusColors.success
 
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(
-            progressText,
-            style = MaterialTheme.typography.titleSmall,
-            color = if (status.allGranted) MaterialTheme.statusColors.success else MaterialTheme.colorScheme.onSurfaceVariant
-        )
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
+        Row(
+            verticalAlignment = Alignment.Bottom,
+            modifier = Modifier.clearAndSetSemantics { contentDescription = progressText }
+        ) {
+            Text(
+                "${status.grantedCount}/${status.totalCount}",
+                style = MaterialTheme.typography.displaySmall,
+                color = if (status.allGranted) success else Gold
+            )
+            Spacer(Modifier.width(Spacing.md))
+            Text(
+                stringResource(R.string.permissions_progress_label),
+                style = MaterialTheme.typography.titleSmall,
+                color = Mist,
+                modifier = Modifier.padding(bottom = 6.dp)
+            )
+        }
         LinearProgressIndicator(
             progress = { progress },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(8.dp)
+                .height(6.dp)
                 .semantics { contentDescription = progressText },
-            color = if (status.allGranted) MaterialTheme.statusColors.success else MaterialTheme.colorScheme.primary,
-            trackColor = MaterialTheme.colorScheme.surfaceVariant,
+            color = if (status.allGranted) success else Gold,
+            trackColor = PanelHighest,
             drawStopIndicator = {}
         )
 
@@ -206,27 +226,23 @@ private fun PermissionRow(permission: AppPermission, granted: Boolean, onGrant: 
     val copy = copyFor(permission)
     val status = MaterialTheme.statusColors
     val badgeContainer by animateColorAsState(
-        if (granted) status.successContainer else MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f),
+        if (granted) status.successContainer else Gold.copy(alpha = 0.14f),
         label = "perm_badge"
     )
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 72.dp)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = Spacing.lg, vertical = Spacing.md),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        IconBadge(copy.icon, if (granted) status.success else MaterialTheme.colorScheme.primary, badgeContainer)
-        Spacer(Modifier.width(16.dp))
+        IconBadge(copy.icon, if (granted) status.success else Gold, badgeContainer)
+        Spacer(Modifier.width(Spacing.lg))
         Column(Modifier.weight(1f)) {
             Text(stringResource(copy.title), style = MaterialTheme.typography.titleMedium)
-            Text(
-                stringResource(copy.description),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Text(stringResource(copy.description), style = MaterialTheme.typography.bodySmall, color = Mist)
         }
-        Spacer(Modifier.width(12.dp))
+        Spacer(Modifier.width(Spacing.md))
         if (granted) {
             Icon(
                 Icons.Filled.CheckCircle,
@@ -235,9 +251,11 @@ private fun PermissionRow(permission: AppPermission, granted: Boolean, onGrant: 
                 modifier = Modifier.size(28.dp)
             )
         } else {
-            FilledTonalButton(onClick = onGrant, modifier = Modifier.heightIn(min = 40.dp)) {
-                Text(stringResource(R.string.action_allow))
-            }
+            HsrButton(
+                text = stringResource(R.string.action_allow),
+                onClick = onGrant,
+                minHeight = TouchTarget.min
+            )
         }
     }
 }

@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Compose draws all UI; the window theme only sets the launch background so there is no flash -->
-    <style name="Theme.WakeAlarm" parent="android:Theme.Material.Light.NoActionBar">
+    <!-- Compose draws all UI; the window theme only sets the launch background so there is no flash.
+         The app is always dark ("Astral Express" palette). -->
+    <style name="Theme.WakeAlarm" parent="android:Theme.Material.NoActionBar">
         <item name="android:windowBackground">@color/window_background</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
     </style>
 
-    <!-- The alarm screen is always dark -->
+    <!-- The alarm screen opens on its crimson-tinted background -->
     <style name="Theme.WakeAlarm.Alarm" parent="android:Theme.Material.NoActionBar">
         <item name="android:windowBackground">@color/alarm_window_background</item>
         <item name="android:statusBarColor">@android:color/transparent</item>

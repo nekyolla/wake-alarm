@@ -38,6 +38,16 @@ class AlarmSoundPlayer(context: Context) {
         val forceMaxVolume: Boolean = true
     )
 
+    /** Which sound actually started, so the UI can tell the user when their file couldn't play. */
+    enum class Source {
+        /** The requested sound (custom file/ringtone, or the default alarm when none was chosen). */
+        REQUESTED,
+        /** The requested sound failed; a system alarm sound plays instead. */
+        FALLBACK,
+        /** No sound could be played at all (vibration only, if enabled). */
+        NONE
+    }
+
     companion object {
         private const val TAG = "AlarmSoundPlayer"
         private const val RAMP_START = 0.3f
@@ -62,8 +72,10 @@ class AlarmSoundPlayer(context: Context) {
 
     /**
      * Start playing the alarm sound (and vibrating, if enabled). Restarts if already playing.
+     *
+     * @return which sound is playing.
      */
-    fun start(options: Options = Options()) {
+    fun start(options: Options = Options()): Source {
         stop()
 
         if (options.forceMaxVolume) {
@@ -85,9 +97,10 @@ class AlarmSoundPlayer(context: Context) {
         } else {
             defaultAlarmUri()
         }
-        if (targetUri != null) playAudio(targetUri, options.enableRampUp)
+        val source = if (targetUri != null) playAudio(targetUri, options.enableRampUp) else Source.NONE
 
         if (options.vibrate) startVibration()
+        return source
     }
 
     private fun defaultAlarmUri(): Uri? =
@@ -95,7 +108,7 @@ class AlarmSoundPlayer(context: Context) {
             ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
             ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
 
-    private fun playAudio(uri: Uri, enableRampUp: Boolean) {
+    private fun playAudio(uri: Uri, enableRampUp: Boolean): Source {
         val initialVolume = if (enableRampUp) RAMP_START else 1.0f
 
         try {
@@ -113,14 +126,15 @@ class AlarmSoundPlayer(context: Context) {
             if (enableRampUp) {
                 startVolumeRampUp()
             }
+            return Source.REQUESTED
         } catch (e: Exception) {
             Log.e(TAG, "MediaPlayer failed for URI: $uri, falling back to Ringtone", e)
             mediaPlayer?.release()
             mediaPlayer = null
             // A custom file may have been deleted or lost its permission: fall back to the system alarm
-            if (!playFallbackRingtone(uri)) {
-                defaultAlarmUri()?.let { playFallbackRingtone(it) }
-            }
+            if (playFallbackRingtone(uri)) return Source.REQUESTED
+            val fallback = defaultAlarmUri() ?: return Source.NONE
+            return if (fallback != uri && playFallbackRingtone(fallback)) Source.FALLBACK else Source.NONE
         }
     }
 

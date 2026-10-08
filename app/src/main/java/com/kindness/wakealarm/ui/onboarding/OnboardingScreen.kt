@@ -25,10 +25,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Alarm
+import androidx.compose.material.icons.automirrored.outlined.VolumeUp
 import androidx.compose.material.icons.filled.TaskAlt
 import androidx.compose.material.icons.outlined.Block
 import androidx.compose.material.icons.outlined.BugReport
@@ -40,8 +40,6 @@ import androidx.compose.material.icons.outlined.PhoneAndroid
 import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material.icons.outlined.Visibility
-import androidx.compose.material.icons.automirrored.outlined.VolumeUp
-import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -56,16 +54,29 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.kindness.wakealarm.R
+import com.kindness.wakealarm.ui.components.Companion3D
+import com.kindness.wakealarm.ui.components.HsrButton
+import com.kindness.wakealarm.ui.components.IconBadge
+import com.kindness.wakealarm.ui.components.LanguageSelector
+import com.kindness.wakealarm.ui.components.applyLanguage
+import com.kindness.wakealarm.ui.theme.Gold
+import com.kindness.wakealarm.ui.theme.GoldSoft
+import com.kindness.wakealarm.ui.theme.LineStrong
+import com.kindness.wakealarm.ui.theme.Mist
+import com.kindness.wakealarm.ui.theme.PanelLow
+import com.kindness.wakealarm.ui.theme.Spacing
+import com.kindness.wakealarm.ui.theme.TouchTarget
+import com.kindness.wakealarm.ui.theme.WakeType
+import com.kindness.wakealarm.util.AppLocale
 import com.kindness.wakealarm.util.PermissionHelper
 
 private enum class Step { Welcome, Privacy, Permissions, Done }
@@ -84,15 +95,16 @@ fun OnboardingScreen(onFinish: () -> Unit) {
     BackHandler(enabled = stepIndex > 0) { stepIndex-- }
 
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
+        containerColor = Color.Transparent,
         bottomBar = {
             Column(
                 Modifier
                     .fillMaxWidth()
+                    .background(PanelLow.copy(alpha = 0.9f))
                     .navigationBarsPadding()
-                    .padding(horizontal = 20.dp, vertical = 16.dp),
+                    .padding(horizontal = Spacing.gutter, vertical = Spacing.lg),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(Spacing.md)
             ) {
                 StepDots(current = stepIndex, total = Step.entries.size)
                 when (step) {
@@ -100,8 +112,8 @@ fun OnboardingScreen(onFinish: () -> Unit) {
                     Step.Privacy -> {
                         PrimaryButton(stringResource(R.string.action_agree_continue)) { stepIndex++ }
                         // Declining skips the permission step entirely; the app stays usable for setup
-                        TextButton(onClick = { stepIndex = Step.Done.ordinal }, modifier = Modifier.heightIn(min = 48.dp)) {
-                            Text(stringResource(R.string.action_decline))
+                        TextButton(onClick = { stepIndex = Step.Done.ordinal }, modifier = Modifier.heightIn(min = TouchTarget.min)) {
+                            Text(stringResource(R.string.action_decline), color = Mist)
                         }
                     }
                     Step.Permissions -> {
@@ -131,8 +143,8 @@ fun OnboardingScreen(onFinish: () -> Unit) {
                     .fillMaxSize()
                     .statusBarsPadding()
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp, vertical = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                    .padding(horizontal = Spacing.gutter, vertical = Spacing.xl),
+                verticalArrangement = Arrangement.spacedBy(Spacing.lg)
             ) {
                 when (current) {
                     Step.Welcome -> WelcomeStep()
@@ -140,6 +152,7 @@ fun OnboardingScreen(onFinish: () -> Unit) {
                     Step.Permissions -> {
                         StepHeader(
                             icon = Icons.Outlined.Shield,
+                            eyebrow = stringResource(R.string.onboarding_step_of, 3, Step.entries.size),
                             title = stringResource(R.string.onboarding_permissions_title),
                             body = stringResource(R.string.onboarding_permissions_body)
                         )
@@ -154,16 +167,20 @@ fun OnboardingScreen(onFinish: () -> Unit) {
 
 @Composable
 private fun WelcomeStep() {
-    Spacer(Modifier.height(24.dp))
-    Box(
-        Modifier
-            .size(96.dp)
-            .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.primary),
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(Icons.Filled.Alarm, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(48.dp))
+    val context = LocalContext.current
+    var language by remember { mutableStateOf(AppLocale.current(context)) }
+
+    LanguageSelector(
+        current = language,
+        onSelect = { option ->
+            language = option
+            applyLanguage(context, option)
+        }
+    )
+    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+        Companion3D(size = 180.dp)
     }
+    Text(stringResource(R.string.onboarding_welcome_eyebrow).uppercase(), style = WakeType.eyebrow, color = GoldSoft)
     Text(
         stringResource(R.string.onboarding_welcome_title),
         style = MaterialTheme.typography.headlineLarge,
@@ -172,9 +189,8 @@ private fun WelcomeStep() {
     Text(
         stringResource(R.string.onboarding_welcome_body),
         style = MaterialTheme.typography.bodyLarge,
-        color = MaterialTheme.colorScheme.onSurfaceVariant
+        color = Mist
     )
-    Spacer(Modifier.height(8.dp))
     FeatureRow(Icons.Outlined.Key, R.string.onboarding_feature_keywords_title, R.string.onboarding_feature_keywords_body)
     FeatureRow(Icons.AutoMirrored.Outlined.VolumeUp, R.string.onboarding_feature_loud_title, R.string.onboarding_feature_loud_body)
     FeatureRow(Icons.Outlined.Dashboard, R.string.onboarding_feature_toggle_title, R.string.onboarding_feature_toggle_body)
@@ -184,6 +200,7 @@ private fun WelcomeStep() {
 private fun PrivacyStep() {
     StepHeader(
         icon = Icons.Outlined.Lock,
+        eyebrow = stringResource(R.string.onboarding_step_of, 2, Step.entries.size),
         title = stringResource(R.string.onboarding_privacy_title),
         body = stringResource(R.string.onboarding_privacy_body)
     )
@@ -197,6 +214,7 @@ private fun PrivacyStep() {
 private fun DoneStep(requiredGranted: Boolean) {
     StepHeader(
         icon = Icons.Filled.TaskAlt,
+        eyebrow = stringResource(R.string.onboarding_step_of, 4, Step.entries.size),
         title = stringResource(R.string.onboarding_done_title),
         body = stringResource(if (requiredGranted) R.string.onboarding_done_body else R.string.onboarding_done_body_incomplete)
     )
@@ -206,64 +224,59 @@ private fun DoneStep(requiredGranted: Boolean) {
 }
 
 @Composable
-private fun StepHeader(icon: ImageVector, title: String, body: String) {
-    Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(40.dp))
+private fun StepHeader(icon: ImageVector, eyebrow: String, title: String, body: String) {
+    IconBadge(icon, Gold, Gold.copy(alpha = 0.14f), size = 56)
+    Text(eyebrow.uppercase(), style = WakeType.eyebrow, color = GoldSoft)
     Text(title, style = MaterialTheme.typography.headlineMedium, modifier = Modifier.semantics { heading() })
-    Text(body, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    Text(body, style = MaterialTheme.typography.bodyLarge, color = Mist)
 }
 
 @Composable
 private fun FeatureRow(icon: ImageVector, title: Int, body: Int) {
     Row(verticalAlignment = Alignment.Top) {
-        Box(
-            Modifier
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primaryContainer),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.size(20.dp))
-        }
-        Spacer(Modifier.width(16.dp))
+        IconBadge(icon, Gold, Gold.copy(alpha = 0.14f))
+        Spacer(Modifier.width(Spacing.lg))
         Column(Modifier.weight(1f)) {
             Text(stringResource(title), style = MaterialTheme.typography.titleMedium)
-            Text(stringResource(body), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(body), style = MaterialTheme.typography.bodyMedium, color = Mist)
         }
     }
 }
 
 @Composable
 private fun PrimaryButton(text: String, onClick: () -> Unit) {
-    Button(
+    HsrButton(
+        text = text,
         onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = 56.dp)
-    ) {
-        Text(text, style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
-    }
+        minHeight = TouchTarget.hero,
+        modifier = Modifier.fillMaxWidth()
+    )
 }
 
 @Composable
 private fun StepDots(current: Int, total: Int) {
     val description = stringResource(R.string.onboarding_step_of, current + 1, total)
     Row(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+        verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.semantics { contentDescription = description }
     ) {
         repeat(total) { index ->
             val active = index == current
-            val width by animateDpAsState(if (active) 24.dp else 8.dp, label = "dot_width")
+            val width by animateDpAsState(if (active) 28.dp else 8.dp, label = "dot_width")
             val color by animateColorAsState(
-                if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
+                when {
+                    active -> Gold
+                    index < current -> GoldSoft.copy(alpha = 0.5f)
+                    else -> LineStrong
+                },
                 label = "dot_color"
             )
             Box(
                 Modifier
                     .height(8.dp)
                     .width(width)
-                    .clip(CircleShape)
-                    .background(color)
+                    .background(color, CutCornerShape(topEnd = 4.dp, bottomStart = 4.dp))
             )
         }
     }

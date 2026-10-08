@@ -1,38 +1,72 @@
 #  WakeAlarm (WhatsApp Keyword Alarm)
 
 <p align="center">
-  <b>Aplikasi Android untuk membangunkan Anda saat pesan darurat/krusial WhatsApp masuk menggunakan sistem pencocokan multi-kata kunci.</b>
+  <img src="app/src/main/ic_launcher-playstore.png" width="128" alt="Ikon WakeAlarm" />
   <br />
-  <i>"May this journey lead us starward - Kindness"</i>
+  <b>Aplikasi Android yang membangunkan Anda saat pesan WhatsApp darurat masuk, berdasarkan kombinasi kata kunci.</b>
+  <br />
+  <i>"May this journey lead us starward" — Kindness</i>
 </p>
 
 ---
 
 ##  Fitur Utama
 
-- **Deteksi per pesan, tanpa alarm berulang**: Setiap bubble pesan WhatsApp / WhatsApp Business dievaluasi tepat satu kali, jadi pesan lama yang belum dibaca tidak membunyikan alarm lagi.
-- **Ambang kata kunci 1–5**: Atur berapa kata kunci berbeda yang harus muncul dalam satu pesan.
-- **Uji pesan**: Ketik contoh pesan di layar Kata Kunci untuk melihat langsung apakah alarm akan berbunyi.
-- **Menembus Hening & DND**: Volume alarm dipaksa 100% saat berbunyi, lalu **dikembalikan** ke volume semula setelah dimatikan.
-- **Volume bertahap & getar** yang bisa diatur, plus nada kustom (MP3/file lokal atau nada sistem) dengan preview.
-- **Layar alarm full-screen**: Jam besar, nama pengirim, *geser untuk mematikan* (anti tersentuh tak sengaja), dan **Matikan & buka chat** langsung ke percakapan WhatsApp.
-- **Jeda satu ketukan**: Quick Settings tile, tombol di notifikasi status, atau kartu Mode Siaga di beranda.
-- **Riwayat alarm**: 30 alarm terakhir, disimpan hanya di perangkat dan tidak ikut di-backup.
-- **Onboarding & izin**: Panduan awal dengan pengungkapan privasi, checklist izin Wajib/Disarankan, dan panduan khusus Xiaomi/HyperOS.
-- **Pemantauan kesehatan**: Peringatan jika izin kurang, listener terputus (dengan tombol hubungkan ulang), atau kata kunci aktif lebih sedikit dari ambang.
+- **Deteksi per pesan, tanpa alarm berulang**: setiap bubble WhatsApp / WhatsApp Business dievaluasi tepat satu kali. Balasan Anda sendiri dari notifikasi tidak ikut dihitung.
+- **Pencocokan kata utuh**: kata, frasa, dan kata bertanda hubung dicocokkan utuh (`co-ass` tidak cocok dengan `co-assistant`); tanda baca di tepi kata kunci tetap bekerja (`dr.`, `#igd`).
+- **Ambang 1–5 kata kunci** per pesan, ditampilkan seperti rarity ★★☆☆☆, plus **uji pesan** langsung di layar Kata kunci.
+- **Pengirim yang tepat di grup**: layar alarm dan riwayat menampilkan orang yang benar-benar menulis pesan darurat.
+- **Tidak ada pesan darurat yang hilang**: pesan darurat yang masuk saat alarm sedang bunyi dicatat di Riwayat dan ditampilkan sebagai "+N pesan darurat lain".
+- **Menembus Hening & DND**: volume alarm dipaksa 100% lalu dikembalikan seperti semula.
+- **Layar alarm full-screen**: jam besar, pendamping 3D, *geser untuk mematikan* dengan getaran per seperempat jalan, dan **Matikan & buka chat**.
+- **Jeda satu ketukan**: Quick Settings tile, tombol di notifikasi status, atau tombol besar di Beranda.
+- **Bahasa Indonesia & English**: ikut sistem atau pilih sendiri di Pengaturan / langkah pertama onboarding.
+- **Riwayat**: 30 pesan darurat terakhir, hanya di perangkat, tidak ikut di-backup.
+
+---
+
+##  Desain: "Astral Express · Crimson"
+
+Tampilan bernuansa Honkai: Star Rail, diambil dari ikon aplikasi (jam merah, bintang emas, mata ungu).
+
+| Elemen | Keputusan |
+|---|---|
+| **Palet** | Latar luar angkasa gelap + nebula, **emas** untuk aksi utama (teks gelap di atas emas), **crimson** untuk merek/alarm, **ungu** sebagai aksen sekunder. Semua teks lolos kontras WCAG AA. Tema gelap saja. |
+| **Tipografi** | **Rajdhani** (OFL) untuk judul, angka, dan label kecil berhuruf kapital; font sistem untuk isi agar mudah dibaca. |
+| **Bentuk** | Sudut terpotong miring (*cut corner*) seperti panel menu HSR, panel kaca dengan garis emas tipis dan ornamen sudut, ornamen ◆ dari motif kartu di ikon. |
+| **Token** | `ui/theme/Tokens.kt` (spasi 4/8/12/16/20/24/32, target sentuh 48/56/64dp, durasi animasi). Semua komponen di `ui/components/`. |
+| **Gerak** | Starfield berkelip, pendamping 3D (miring mengikuti HP, orbit ◆, kilau hologram). Semua berhenti jika animasi sistem dimatikan. |
+
+**UX**
+- **Thumb zone**: navigasi bawah (Beranda · Kata kunci · Riwayat · Pengaturan), tombol siaga besar di area jempol, kolom tambah kata kunci menempel di bawah layar.
+- **Status sistem**: strip kesiapan (Izin · Pantau · Kata kunci) di kartu utama; tiap item yang bermasalah bisa diketuk untuk diperbaiki. Hanya satu banner, yaitu masalah yang paling penting.
+- **Feedback**: snackbar + getar saat siaga diubah, kata kunci ditambah/dihapus, atau nada gagal diputar.
+- **Pencegahan error**: dialog konfirmasi saat mengaktifkan siaga padahal belum siap; peringatan + Urungkan saat kata kunci aktif turun di bawah ambang; peringatan jika file nada tidak bisa dibuka; validasi kata kunci (kosong, terlalu pendek/panjang, tanpa huruf/angka, duplikat).
+
+---
+
+##  Pendamping animasi (GIF)
+
+Taruh file animasi sebagai **`app/src/main/assets/companion.gif`** (atau `companion.webp` animasi), lalu build ulang. File itu dibundel di APK dan diputar di Beranda, onboarding, dan layar alarm di dalam bingkai hologram (Android 9+). File besar otomatis diperkecil saat didekode.
+
+Tanpa file tersebut (atau di Android 8), aplikasi menampilkan maskot dari ikon.
+
+> ⚠️ GIF karakter HSR (mis. Evernight) adalah hak cipta HoYoverse. Bundel hanya untuk pemakaian pribadi; jangan distribusikan APK-nya ke publik.
 
 ---
 
 ## 🛠️ Tech Stack & Architecture
 
 - **Language**: Kotlin
-- **UI Framework**: Jetpack Compose & Material 3
+- **UI Framework**: Jetpack Compose & Material 3 (tema kustom)
 - **Architecture**: MVVM + Repository Pattern
 - **Storage**: Jetpack DataStore Preferences
 - **Concurrency**: Kotlin Coroutines & Flow
 - **Background Service**: Android `NotificationListenerService` & `ForegroundService` (Media Playback)
 - **Min SDK**: API 26 (Android 8.0 Oreo)
-- **Target SDK**: API 34/35 (Android 14/15 / Xiaomi HyperOS 2)
+- **Target SDK**: API 35 (Android 15 / Xiaomi HyperOS 2)
+
+Logika inti tanpa ketergantungan Android (bisa di-unit-test): `util/KeywordMatcher`, `util/KeywordValidator`, `util/MessageDeduplicator`, `util/WhatsAppMessageParser`, `util/TriggerPlanner`, `data/AlarmHistoryCodec`.
 
 ---
 
@@ -40,7 +74,7 @@
 
 ### Persyaratan:
 - JDK 17+
-- Android SDK (API 34+)
+- Android SDK (API 35)
 
 Gradle akan mencari JDK 21 secara otomatis (`gradle/gradle-daemon-jvm.properties`). Jika JDK 21 tidak terdeteksi, daftarkan lokasinya di `~/.gradle/gradle.properties`:
 ```properties
@@ -59,6 +93,15 @@ Salin `keystore.properties.example` menjadi `keystore.properties` (sudah di-.git
 ./gradlew assembleRelease
 ```
 
+### Checklist uji di HP
+1. Onboarding: ganti bahasa ID/EN di langkah pertama, berikan semua izin.
+2. Beranda: aktifkan siaga saat izin belum lengkap → muncul dialog "Belum siap".
+3. Tes alarm dengan HP terkunci → layar alarm muncul, geser untuk mematikan terasa bergetar tiap seperempat.
+4. Kirim 2 pesan darurat beruntun → alarm bunyi sekali, layar menampilkan "+1 pesan darurat lain", dan keduanya ada di Riwayat.
+5. Balas pesan dari notifikasi dengan kata kunci → alarm tidak bunyi.
+6. Pengaturan: pilih file audio, hapus filenya, buka Pengaturan lagi → muncul peringatan nada.
+7. Matikan animasi di Opsi Developer → starfield & pendamping diam.
+
 ---
 
 ## 🔒 Izin Khusus yang Diperlukan
@@ -66,7 +109,14 @@ Salin `keystore.properties.example` menjadi `keystore.properties` (sudah di-.git
 **Wajib:** Akses Notifikasi, Tampilkan Notifikasi, Alarm Layar Penuh (Android 14+), Tanpa Batasan Baterai.
 **Disarankan:** Tampil di Atas Aplikasi Lain, Akses Jangan Ganggu, dan (Xiaomi/HyperOS) Autostart.
 
-Semua bisa diberikan dari layar **Izin dan keandalan** di aplikasi.
+Semua bisa diberikan dari layar **Izin** di aplikasi.
+
+---
+
+## 📄 Lisensi aset
+
+- Font **Rajdhani** © Indian Type Foundry, SIL Open Font License 1.1 — lihat `licenses/OFL-Rajdhani.txt` (di-subset ke huruf Latin).
+- Ikon & maskot: karya pemilik proyek (`art/app_icon_source.webp`).
 
 ---
 

@@ -1,16 +1,14 @@
 package com.kindness.wakealarm.ui.theme
 
-import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
@@ -27,93 +25,79 @@ data class StatusColors(
     val alarmContainer: Color
 )
 
-private val LightStatusColors = StatusColors(
-    success = LightSuccess,
-    successContainer = LightSuccessContainer,
-    warning = LightWarning,
-    warningContainer = LightWarningContainer,
-    alarm = LightAlarm,
-    alarmContainer = LightAlarmContainer
+private val WakeStatusColors = StatusColors(
+    success = Success,
+    successContainer = SuccessContainer,
+    warning = Warning,
+    warningContainer = WarningContainer,
+    alarm = Alarm,
+    alarmContainer = AlarmContainer
 )
 
-private val DarkStatusColors = StatusColors(
-    success = DarkSuccess,
-    successContainer = DarkSuccessContainer,
-    warning = DarkWarning,
-    warningContainer = DarkWarningContainer,
-    alarm = DarkAlarm,
-    alarmContainer = DarkAlarmContainer
-)
-
-private val LocalStatusColors = staticCompositionLocalOf { LightStatusColors }
+private val LocalStatusColors = staticCompositionLocalOf { WakeStatusColors }
 
 val MaterialTheme.statusColors: StatusColors
     @Composable
     @ReadOnlyComposable
     get() = LocalStatusColors.current
 
-private val LightColorScheme = lightColorScheme(
-    primary = LightPrimary,
-    onPrimary = LightOnPrimary,
-    primaryContainer = LightPrimaryContainer,
-    onPrimaryContainer = LightOnPrimaryContainer,
-    secondary = LightSecondary,
-    secondaryContainer = LightSecondaryContainer,
-    onSecondaryContainer = LightOnSecondaryContainer,
-    background = LightBackground,
-    onBackground = LightOnSurface,
-    surface = LightSurface,
-    onSurface = LightOnSurface,
-    surfaceVariant = LightSurfaceVariant,
-    onSurfaceVariant = LightOnSurfaceVariant,
-    surfaceContainerLow = LightSurfaceContainerLow,
-    surfaceContainer = LightSurfaceContainer,
-    surfaceContainerHigh = LightSurfaceContainerHigh,
-    outline = LightOutline,
-    outlineVariant = LightOutlineVariant,
-    error = LightAlarm,
-    errorContainer = LightAlarmContainer
+/**
+ * One dark scheme only: the app is used at night on call, and the HSR look is built on it.
+ * Gold is the primary action color (dark text on gold), crimson the brand/alarm accent.
+ */
+private val WakeColorScheme = darkColorScheme(
+    primary = Gold,
+    onPrimary = OnGold,
+    primaryContainer = GoldContainer,
+    onPrimaryContainer = OnGoldContainer,
+    inversePrimary = Color(0xFF7A5A10),
+    secondary = CrimsonLight,
+    onSecondary = CrimsonContainer,
+    secondaryContainer = CrimsonContainer,
+    onSecondaryContainer = OnCrimsonContainer,
+    tertiary = Violet,
+    onTertiary = Color(0xFF1E0F45),
+    tertiaryContainer = VioletContainer,
+    onTertiaryContainer = OnVioletContainer,
+    background = SpaceBlack,
+    onBackground = Ivory,
+    surface = SpaceDeep,
+    onSurface = Ivory,
+    surfaceVariant = PanelHighest,
+    onSurfaceVariant = Mist,
+    surfaceTint = Color.Transparent,
+    inverseSurface = Ivory,
+    inverseOnSurface = Color(0xFF1A1B26),
+    error = Alarm,
+    onError = Color(0xFF3A0010),
+    errorContainer = AlarmContainer,
+    onErrorContainer = OnCrimsonContainer,
+    outline = LineStrong,
+    outlineVariant = LineSubtle,
+    scrim = Color.Black,
+    surfaceBright = PanelHighest,
+    surfaceDim = SpaceBlack,
+    surfaceContainerLowest = PanelLowest,
+    surfaceContainerLow = PanelLow,
+    surfaceContainer = Panel,
+    surfaceContainerHigh = PanelHigh,
+    surfaceContainerHighest = PanelHighest
 )
 
-private val DarkColorScheme = darkColorScheme(
-    primary = DarkPrimary,
-    onPrimary = DarkOnPrimary,
-    primaryContainer = DarkPrimaryContainer,
-    onPrimaryContainer = DarkOnPrimaryContainer,
-    secondary = DarkSecondary,
-    secondaryContainer = DarkSecondaryContainer,
-    onSecondaryContainer = DarkOnSecondaryContainer,
-    background = DarkBackground,
-    onBackground = DarkOnSurface,
-    surface = DarkSurface,
-    onSurface = DarkOnSurface,
-    surfaceVariant = DarkSurfaceVariant,
-    onSurfaceVariant = DarkOnSurfaceVariant,
-    surfaceContainerLow = DarkSurfaceContainerLow,
-    surfaceContainer = DarkSurfaceContainer,
-    surfaceContainerHigh = DarkSurfaceContainerHigh,
-    outline = DarkOutline,
-    outlineVariant = DarkOutlineVariant,
-    error = DarkAlarm,
-    errorContainer = DarkAlarmContainer
-)
-
+/** Angled corners, like the panels in HSR's menus: top-end and bottom-start are cut. */
 private val WakeAlarmShapes = Shapes(
-    extraSmall = RoundedCornerShape(6.dp),
-    small = RoundedCornerShape(10.dp),
-    medium = RoundedCornerShape(16.dp),
-    large = RoundedCornerShape(24.dp),
-    extraLarge = RoundedCornerShape(32.dp)
+    extraSmall = CutCornerShape(topEnd = 6.dp, bottomStart = 6.dp),
+    small = CutCornerShape(topEnd = 8.dp, bottomStart = 8.dp),
+    medium = CutCornerShape(topEnd = 12.dp, bottomStart = 12.dp),
+    large = CutCornerShape(topEnd = 18.dp, bottomStart = 18.dp),
+    extraLarge = CutCornerShape(topEnd = 24.dp, bottomStart = 24.dp)
 )
 
 @Composable
-fun WakeAlarmTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    content: @Composable () -> Unit
-) {
-    CompositionLocalProvider(LocalStatusColors provides if (darkTheme) DarkStatusColors else LightStatusColors) {
+fun WakeAlarmTheme(content: @Composable () -> Unit) {
+    CompositionLocalProvider(LocalStatusColors provides WakeStatusColors) {
         MaterialTheme(
-            colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme,
+            colorScheme = WakeColorScheme,
             typography = WakeAlarmTypography,
             shapes = WakeAlarmShapes,
             content = content
