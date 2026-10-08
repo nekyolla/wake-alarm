@@ -10,6 +10,7 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.Build
 import android.util.Log
+import android.view.Surface
 import android.widget.ImageView
 import androidx.annotation.RequiresApi
 import androidx.compose.animation.core.LinearEasing
@@ -43,6 +44,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -65,11 +67,13 @@ import kotlin.math.sin
 enum class CompanionMood { Calm, Alarm }
 
 /**
- * Finds the bundled companion animation: `app/src/main/assets/companion.gif` (or `.webp`).
- * Without one, the app shows the mascot from the launcher icon instead.
+ * Finds the bundled companion animation in `app/src/main/assets/`:
+ * - `companion.webp`: animated WebP with a transparent background, shown floating freely;
+ * - `companion.gif`: shown inside the gold holographic frame (a GIF usually has a solid background).
+ * Without either, the app shows the mascot from the launcher icon instead.
  */
 object CompanionAssets {
-    private val CANDIDATES = listOf("companion.gif", "companion.webp")
+    private val CANDIDATES = listOf("companion.webp", "companion.gif")
 
     @Volatile
     private var resolved = false
@@ -78,7 +82,8 @@ object CompanionAssets {
     fun find(context: Context): String? {
         if (!resolved) {
             cached = try {
-                context.assets.list("")?.firstOrNull { it in CANDIDATES }
+                val listed = context.assets.list("").orEmpty().toSet()
+                CANDIDATES.firstOrNull { it in listed }
             } catch (e: Exception) {
                 null
             }
@@ -161,7 +166,11 @@ fun Companion3D(
             contentAlignment = Alignment.Center
         ) {
             when (animated) {
-                is Animated.Ready -> HoloFrame(animated.drawable, size, playing = !reduceMotion, shimmer = { time() })
+                is Animated.Ready -> if (assetName?.endsWith(".gif") == true) {
+                    HoloFrame(animated.drawable, size, playing = !reduceMotion, shimmer = { time() })
+                } else {
+                    FloatingAnimation(animated.drawable, size, playing = !reduceMotion)
+                }
                 Animated.Loading -> Unit
                 Animated.Failed -> Image(
                     painter = painterResource(R.drawable.mascot),
@@ -179,14 +188,41 @@ fun Companion3D(
     }
 }
 
-/** The bundled animation in an angled gold frame with a moving holographic sheen. */
+/** A transparent animation (companion.webp), free-floating like the mascot. */
 @Composable
-private fun HoloFrame(drawable: Drawable, size: Dp, playing: Boolean, shimmer: () -> Float) {
-    val ratio = if (drawable.intrinsicWidth > 0 && drawable.intrinsicHeight > 0) {
-        (drawable.intrinsicWidth.toFloat() / drawable.intrinsicHeight).coerceIn(0.5f, 1.6f)
+private fun FloatingAnimation(drawable: Drawable, size: Dp, playing: Boolean) {
+    val ratio = drawable.aspectRatio()
+    DisposableEffect(drawable, playing) {
+        if (playing) AnimatedImageDrawableCompat.start(drawable) else AnimatedImageDrawableCompat.stop(drawable)
+        onDispose { AnimatedImageDrawableCompat.stop(drawable) }
+    }
+    AndroidView(
+        factory = { ctx ->
+            ImageView(ctx).apply {
+                scaleType = ImageView.ScaleType.FIT_CENTER
+                importantForAccessibility = ImageView.IMPORTANT_FOR_ACCESSIBILITY_NO
+            }
+        },
+        update = { view ->
+            if (view.drawable !== drawable) view.setImageDrawable(drawable)
+        },
+        modifier = Modifier
+            .width(if (ratio <= 1f) size * ratio else size)
+            .height(if (ratio <= 1f) size else size / ratio)
+    )
+}
+
+private fun Drawable.aspectRatio(): Float =
+    if (intrinsicWidth > 0 && intrinsicHeight > 0) {
+        (intrinsicWidth.toFloat() / intrinsicHeight).coerceIn(0.5f, 1.6f)
     } else {
         1f
     }
+
+/** The bundled animation in an angled gold frame with a moving holographic sheen. */
+@Composable
+private fun HoloFrame(drawable: Drawable, size: Dp, playing: Boolean, shimmer: () -> Float) {
+    val ratio = drawable.aspectRatio()
     val frameWidth = if (ratio <= 1f) size * ratio else size
     val frameHeight = if (ratio <= 1f) size else size / ratio
 
@@ -275,10 +311,11 @@ private fun rememberAnimatedAsset(name: String): Animated {
 @Composable
 fun rememberDeviceTilt(enabled: Boolean): State<Offset> {
     val context = LocalContext.current
+    val view = LocalView.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val tilt = remember { mutableStateOf(Offset.Zero) }
 
-    DisposableEffect(enabled, lifecycleOwner) {
+    DisposableEffect(enabled, lifecycleOwner, view) {
         val sensorManager = context.getSystemService(SensorManager::class.java)
         val sensor = sensorManager?.getDefaultSensor(Sensor.TYPE_GRAVITY)
             ?: sensorManager?.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
@@ -291,9 +328,16 @@ fun rememberDeviceTilt(enabled: Boolean): State<Offset> {
         var smoothY = 0f
         val listener = object : SensorEventListener {
             override fun onSensorChanged(event: SensorEvent) {
-                val x = (-event.values[0] / SensorManager.GRAVITY_EARTH).coerceIn(-1f, 1f)
-                // ~0.6 g on the y axis is how most people hold a phone; treat that as level
-                val y = (event.values[1] / SensorManager.GRAVITY_EARTH - 0.6f).coerceIn(-1f, 1f)
+                // Sensor axes follow the device's natural orientation; map them to the screen's
+                val (screenX, screenY) = when (view.display?.rotation ?: Surface.ROTATION_0) {
+                    Surface.ROTATION_90 -> -event.values[1] to event.values[0]
+                    Surface.ROTATION_180 -> -event.values[0] to -event.values[1]
+                    Surface.ROTATION_270 -> event.values[1] to -event.values[0]
+                    else -> event.values[0] to event.values[1]
+                }
+                val x = (-screenX / SensorManager.GRAVITY_EARTH).coerceIn(-1f, 1f)
+                // ~0.6 g along the screen's vertical axis is how most people hold a phone; treat that as level
+                val y = (screenY / SensorManager.GRAVITY_EARTH - 0.6f).coerceIn(-1f, 1f)
                 smoothX += (x - smoothX) * 0.12f
                 smoothY += (y - smoothY) * 0.12f
                 tilt.value = Offset(smoothX, smoothY)

@@ -77,6 +77,7 @@ import com.kindness.wakealarm.ui.components.SectionHeader
 import com.kindness.wakealarm.ui.components.WakeSnackbarHost
 import com.kindness.wakealarm.ui.components.WakeTopBar
 import com.kindness.wakealarm.ui.components.rememberHaptics
+import com.kindness.wakealarm.ui.components.readableWidth
 import com.kindness.wakealarm.ui.theme.Gold
 import com.kindness.wakealarm.ui.theme.GoldSoft
 import com.kindness.wakealarm.ui.theme.Mist
@@ -158,7 +159,8 @@ fun KeywordListScreen(viewModel: KeywordViewModel = viewModel()) {
                 .fillMaxSize()
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = Spacing.gutter),
+                .padding(horizontal = Spacing.gutter)
+                .readableWidth(),
             verticalArrangement = Arrangement.spacedBy(Spacing.md)
         ) {
             val totalActive = activeKeywords.size
@@ -294,7 +296,9 @@ private fun AddKeywordBar(
                 .background(Brush.horizontalGradient(listOf(Color.Transparent, GoldSoft.copy(alpha = 0.45f), Color.Transparent)))
         )
         Row(
-            Modifier.padding(start = Spacing.gutter, end = Spacing.gutter, top = Spacing.sm),
+            Modifier
+                .padding(start = Spacing.gutter, end = Spacing.gutter, top = Spacing.sm)
+                .readableWidth(),
             verticalAlignment = Alignment.Top
         ) {
             OutlinedTextField(

@@ -99,7 +99,8 @@ class AlarmSoundPlayer(context: Context) {
         }
         val source = if (targetUri != null) playAudio(targetUri, options.enableRampUp) else Source.NONE
 
-        if (options.vibrate) startVibration()
+        // Never fail silently: with no playable sound, vibrate even if vibration is turned off
+        if (options.vibrate || source == Source.NONE) startVibration()
         return source
     }
 

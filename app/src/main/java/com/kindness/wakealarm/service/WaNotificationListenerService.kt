@@ -139,13 +139,13 @@ class WaNotificationListenerService : NotificationListenerService() {
                 // Evaluate each new bubble on its own, newest first
                 val triggered = fresh.asReversed().mapNotNull { message ->
                     val result = KeywordMatcher.match(message.text, keywords, threshold = threshold)
-                    Log.d(TAG, "Bubble -> ${result.matchCount}/$threshold matches (${result.matchedKeywords})")
+                    Log.d(TAG, "Bubble -> ${result.matchCount}/$threshold matches")
                     if (result.isTriggered) message to result.matchedKeywords else null
                 }
 
                 val plan = TriggerPlanner.plan(triggered, AlarmForegroundService.isRunning())
                 plan.ring?.let { (message, matched) ->
-                    Log.i(TAG, "ALARM TRIGGERED. Matched: $matched")
+                    Log.i(TAG, "Alarm triggered (${matched.size} keywords)")
                     triggerAlarm(
                         AlarmForegroundService.AlarmRequest(
                             matchedKeywords = matched,
@@ -276,7 +276,12 @@ class WaNotificationListenerService : NotificationListenerService() {
             .setSilent(true)
             .setShowWhen(false)
             .setCategory(NotificationCompat.CATEGORY_STATUS)
-            .addAction(icon, toggleLabel, togglePendingIntent)
+            .addAction(
+                NotificationCompat.Action.Builder(icon, toggleLabel, togglePendingIntent)
+                    // Pausing from the lock screen needs the PIN (Android 12+); resuming never does
+                    .setAuthenticationRequired(masterEnabled)
+                    .build()
+            )
             .build()
     }
 }

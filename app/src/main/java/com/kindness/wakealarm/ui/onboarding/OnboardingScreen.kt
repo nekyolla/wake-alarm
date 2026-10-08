@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CutCornerShape
@@ -68,6 +67,7 @@ import com.kindness.wakealarm.ui.components.HsrButton
 import com.kindness.wakealarm.ui.components.IconBadge
 import com.kindness.wakealarm.ui.components.LanguageSelector
 import com.kindness.wakealarm.ui.components.applyLanguage
+import com.kindness.wakealarm.ui.components.readableWidth
 import com.kindness.wakealarm.ui.theme.Gold
 import com.kindness.wakealarm.ui.theme.GoldSoft
 import com.kindness.wakealarm.ui.theme.LineStrong
@@ -102,7 +102,8 @@ fun OnboardingScreen(onFinish: () -> Unit) {
                     .fillMaxWidth()
                     .background(PanelLow.copy(alpha = 0.9f))
                     .navigationBarsPadding()
-                    .padding(horizontal = Spacing.gutter, vertical = Spacing.lg),
+                    .padding(horizontal = Spacing.gutter, vertical = Spacing.lg)
+                    .readableWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(Spacing.md)
             ) {
@@ -141,9 +142,9 @@ fun OnboardingScreen(onFinish: () -> Unit) {
             Column(
                 Modifier
                     .fillMaxSize()
-                    .statusBarsPadding()
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = Spacing.gutter, vertical = Spacing.xl),
+                    .padding(horizontal = Spacing.gutter, vertical = Spacing.xl)
+                    .readableWidth(),
                 verticalArrangement = Arrangement.spacedBy(Spacing.lg)
             ) {
                 when (current) {

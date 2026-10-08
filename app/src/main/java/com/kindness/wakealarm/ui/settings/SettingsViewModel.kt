@@ -1,6 +1,7 @@
 package com.kindness.wakealarm.ui.settings
 
 import android.app.Application
+import android.content.Intent
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -112,6 +113,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     fun setCustomRingtone(uri: String?, title: String?) {
         stopPreview()
+        releaseOldGrant(previous = customRingtoneUri.value, next = uri)
         viewModelScope.launch {
             settingsRepository.setCustomRingtone(uri, title)
             if (uri != null) _messages.send(R.string.snack_ringtone_saved)
@@ -119,6 +121,19 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun resetToDefaultRingtone() = setCustomRingtone(null, null)
+
+    /** Don't keep permanent read access to audio files the user no longer uses as the alarm sound. */
+    private fun releaseOldGrant(previous: String?, next: String?) {
+        if (previous == null || previous == next) return
+        try {
+            getApplication<Application>().contentResolver.releasePersistableUriPermission(
+                Uri.parse(previous),
+                Intent.FLAG_GRANT_READ_URI_PERMISSION
+            )
+        } catch (e: SecurityException) {
+            // Not a persisted grant (e.g. a system ringtone): nothing to release
+        }
+    }
 
     fun togglePreview() {
         if (_isPlayingPreview.value) {

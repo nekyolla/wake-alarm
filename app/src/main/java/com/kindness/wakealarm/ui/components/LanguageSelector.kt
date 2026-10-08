@@ -18,6 +18,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.kindness.wakealarm.R
 import com.kindness.wakealarm.receiver.PersistentToggleReceiver
@@ -60,6 +61,10 @@ fun LanguageSelector(
                 style = MaterialTheme.typography.titleSmall,
                 color = if (selected) Gold else Ivory,
                 textAlign = TextAlign.Center,
+                // One line each, so the three segments always have the same height
+                maxLines = 1,
+                softWrap = false,
+                overflow = TextOverflow.Ellipsis,
                 modifier = Modifier
                     .weight(1f)
                     .heightIn(min = TouchTarget.min)

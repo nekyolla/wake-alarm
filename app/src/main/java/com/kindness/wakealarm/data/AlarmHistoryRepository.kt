@@ -10,7 +10,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 private val Context.historyDataStore: DataStore<Preferences> by preferencesDataStore(
-    name = "alarm_history"
+    name = "alarm_history",
+    corruptionHandler = resetOnCorruption()
 )
 
 /**
@@ -23,7 +24,7 @@ class AlarmHistoryRepository(private val context: Context) {
         private val EVENTS_KEY = stringPreferencesKey("events")
     }
 
-    val eventsFlow: Flow<List<AlarmEvent>> = context.historyDataStore.data
+    val eventsFlow: Flow<List<AlarmEvent>> = context.historyDataStore.data.orDefaultsOnIoError()
         .map { preferences -> AlarmHistoryCodec.decode(preferences[EVENTS_KEY]) }
 
     suspend fun add(event: AlarmEvent) {

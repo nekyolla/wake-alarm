@@ -41,15 +41,20 @@ Tampilan bernuansa Honkai: Star Rail, diambil dari ikon aplikasi (jam merah, bin
 - **Thumb zone**: navigasi bawah (Beranda · Kata kunci · Riwayat · Pengaturan), tombol siaga besar di area jempol, kolom tambah kata kunci menempel di bawah layar.
 - **Status sistem**: strip kesiapan (Izin · Pantau · Kata kunci) di kartu utama; tiap item yang bermasalah bisa diketuk untuk diperbaiki. Hanya satu banner, yaitu masalah yang paling penting.
 - **Feedback**: snackbar + getar saat siaga diubah, kata kunci ditambah/dihapus, atau nada gagal diputar.
-- **Pencegahan error**: dialog konfirmasi saat mengaktifkan siaga padahal belum siap; peringatan + Urungkan saat kata kunci aktif turun di bawah ambang; peringatan jika file nada tidak bisa dibuka; validasi kata kunci (kosong, terlalu pendek/panjang, tanpa huruf/angka, duplikat).
+- **Pencegahan error**: dialog konfirmasi saat mengaktifkan siaga padahal belum siap; peringatan + Urungkan saat kata kunci aktif turun di bawah ambang; peringatan jika file nada tidak bisa dibuka; validasi kata kunci (kosong, terlalu pendek/panjang, tanpa huruf/angka, duplikat); alarm tetap bergetar kalau tidak ada nada yang bisa diputar.
+- **Privasi di layar kunci**: saat HP terkunci dengan PIN, notifikasi dan layar alarm hanya menampilkan pengirim dan kata kunci; isi pesan baru terlihat setelah "Buka kunci untuk membaca". Mematikan siaga dari layar kunci (tile Quick Settings atau tombol Jeda) meminta PIN.
+- **Responsif**: tombol geser-untuk-mematikan selalu terlihat (HP pendek & landscape), lebar konten maksimum 600dp di tablet, aman untuk font besar dan layar 320–360dp.
 
 ---
 
 ##  Pendamping animasi (GIF)
 
-Taruh file animasi sebagai **`app/src/main/assets/companion.gif`** (atau `companion.webp` animasi), lalu build ulang. File itu dibundel di APK dan diputar di Beranda, onboarding, dan layar alarm di dalam bingkai hologram (Android 9+). File besar otomatis diperkecil saat didekode.
+Aplikasi memutar animasi dari `app/src/main/assets/` di Beranda, onboarding, dan layar alarm (Android 9+):
 
-Tanpa file tersebut (atau di Android 8), aplikasi menampilkan maskot dari ikon.
+- **`companion.webp`** (WebP animasi **berlatar transparan**) → karakter tampil melayang tanpa bingkai. Ini yang dipakai sekarang: hasil konversi dari `art/companion_source.gif` (latar putih dihapus, bagian bawah diberi fade).
+- **`companion.gif`** → tampil di dalam bingkai hologram emas (cocok untuk GIF berlatar solid).
+
+Jika keduanya ada, `companion.webp` yang dipakai. Tanpa file tersebut (atau di Android 8), aplikasi menampilkan maskot dari ikon. File besar otomatis diperkecil saat didekode.
 
 > ⚠️ GIF karakter HSR (mis. Evernight) adalah hak cipta HoYoverse. Bundel hanya untuk pemakaian pribadi; jangan distribusikan APK-nya ke publik.
 
@@ -101,6 +106,10 @@ Salin `keystore.properties.example` menjadi `keystore.properties` (sudah di-.git
 5. Balas pesan dari notifikasi dengan kata kunci → alarm tidak bunyi.
 6. Pengaturan: pilih file audio, hapus filenya, buka Pengaturan lagi → muncul peringatan nada.
 7. Matikan animasi di Opsi Developer → starfield & pendamping diam.
+8. HP dikunci dengan PIN, kirim pesan darurat → isi pesan tersembunyi di notifikasi & layar alarm; "Buka kunci untuk membaca" menampilkannya.
+9. HP terkunci → tile Quick Settings / tombol "Jeda" meminta PIN sebelum siaga dimatikan.
+10. Jangan Ganggu "Hening total" (Android 8–14, izin DND diberikan) → alarm tetap bunyi, DND kembali seperti semula setelah dimatikan.
+11. HP layar kecil (360×640) dan landscape → tombol geser-untuk-mematikan terlihat tanpa scroll.
 
 ---
 

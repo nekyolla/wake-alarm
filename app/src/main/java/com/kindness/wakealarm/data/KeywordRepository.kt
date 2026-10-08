@@ -11,7 +11,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 private val Context.keywordDataStore: DataStore<Preferences> by preferencesDataStore(
-    name = "keywords"
+    name = "keywords",
+    corruptionHandler = resetOnCorruption()
 )
 
 /**
@@ -29,7 +30,7 @@ class KeywordRepository(private val context: Context) {
      * Flow of active preset keyword strings.
      * On first launch, defaults to PresetKeywords.defaultEnabled.
      */
-    val activePresetsFlow: Flow<Set<String>> = context.keywordDataStore.data
+    val activePresetsFlow: Flow<Set<String>> = context.keywordDataStore.data.orDefaultsOnIoError()
         .map { preferences ->
             preferences[ACTIVE_PRESETS_KEY] ?: PresetKeywords.defaultEnabled
         }
@@ -37,7 +38,7 @@ class KeywordRepository(private val context: Context) {
     /**
      * Flow of custom (user-added) keyword strings.
      */
-    val customKeywordsFlow: Flow<Set<String>> = context.keywordDataStore.data
+    val customKeywordsFlow: Flow<Set<String>> = context.keywordDataStore.data.orDefaultsOnIoError()
         .map { preferences ->
             preferences[CUSTOM_KEYWORDS_KEY] ?: emptySet()
         }
@@ -45,7 +46,7 @@ class KeywordRepository(private val context: Context) {
     /**
      * Combined flow of all active keywords (presets + custom).
      */
-    val allActiveKeywordsFlow: Flow<List<String>> = context.keywordDataStore.data
+    val allActiveKeywordsFlow: Flow<List<String>> = context.keywordDataStore.data.orDefaultsOnIoError()
         .map { preferences ->
             val presets = preferences[ACTIVE_PRESETS_KEY] ?: PresetKeywords.defaultEnabled
             val custom = preferences[CUSTOM_KEYWORDS_KEY] ?: emptySet()

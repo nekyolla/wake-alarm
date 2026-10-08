@@ -12,7 +12,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 private val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(
-    name = "settings"
+    name = "settings",
+    corruptionHandler = resetOnCorruption()
 )
 
 /**
@@ -39,7 +40,7 @@ class SettingsRepository(private val context: Context) {
      * Observe the Master Switch state as a Flow.
      * Defaults to false (OFF) on first install.
      */
-    val masterSwitchFlow: Flow<Boolean> = context.settingsDataStore.data
+    val masterSwitchFlow: Flow<Boolean> = context.settingsDataStore.data.orDefaultsOnIoError()
         .map { preferences ->
             preferences[MASTER_SWITCH_KEY] ?: false
         }
@@ -47,7 +48,7 @@ class SettingsRepository(private val context: Context) {
     /**
      * Observe the keyword threshold (1..5). Default: 2.
      */
-    val thresholdFlow: Flow<Int> = context.settingsDataStore.data
+    val thresholdFlow: Flow<Int> = context.settingsDataStore.data.orDefaultsOnIoError()
         .map { preferences ->
             preferences[KEYWORD_THRESHOLD_KEY] ?: DEFAULT_THRESHOLD
         }
@@ -55,7 +56,7 @@ class SettingsRepository(private val context: Context) {
     /**
      * Observe volume ramp-up setting. Default: true.
      */
-    val volumeRampUpFlow: Flow<Boolean> = context.settingsDataStore.data
+    val volumeRampUpFlow: Flow<Boolean> = context.settingsDataStore.data.orDefaultsOnIoError()
         .map { preferences ->
             preferences[VOLUME_RAMP_UP_KEY] ?: true
         }
@@ -63,7 +64,7 @@ class SettingsRepository(private val context: Context) {
     /**
      * Observe vibration setting. Default: true.
      */
-    val vibrationFlow: Flow<Boolean> = context.settingsDataStore.data
+    val vibrationFlow: Flow<Boolean> = context.settingsDataStore.data.orDefaultsOnIoError()
         .map { preferences ->
             preferences[VIBRATION_KEY] ?: true
         }
@@ -71,7 +72,7 @@ class SettingsRepository(private val context: Context) {
     /**
      * Observe custom ringtone URI (null = default alarm sound).
      */
-    val customRingtoneUriFlow: Flow<String?> = context.settingsDataStore.data
+    val customRingtoneUriFlow: Flow<String?> = context.settingsDataStore.data.orDefaultsOnIoError()
         .map { preferences ->
             preferences[CUSTOM_RINGTONE_URI_KEY]
         }
@@ -79,7 +80,7 @@ class SettingsRepository(private val context: Context) {
     /**
      * Observe custom ringtone title (null = default alarm sound).
      */
-    val customRingtoneTitleFlow: Flow<String?> = context.settingsDataStore.data
+    val customRingtoneTitleFlow: Flow<String?> = context.settingsDataStore.data.orDefaultsOnIoError()
         .map { preferences ->
             preferences[CUSTOM_RINGTONE_TITLE_KEY]
         }
@@ -87,7 +88,7 @@ class SettingsRepository(private val context: Context) {
     /**
      * Observe whether the first-run onboarding has been completed.
      */
-    val onboardingCompletedFlow: Flow<Boolean> = context.settingsDataStore.data
+    val onboardingCompletedFlow: Flow<Boolean> = context.settingsDataStore.data.orDefaultsOnIoError()
         .map { preferences ->
             preferences[ONBOARDING_DONE_KEY] ?: false
         }

@@ -35,6 +35,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -42,6 +43,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.AlarmOff
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.LockOpen
 import androidx.compose.material.icons.outlined.MarkChatUnread
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -62,6 +65,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
@@ -74,6 +78,7 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
@@ -105,6 +110,7 @@ import com.kindness.wakealarm.ui.theme.OnGold
 import com.kindness.wakealarm.ui.theme.OnVioletContainer
 import com.kindness.wakealarm.ui.theme.PanelLow
 import com.kindness.wakealarm.ui.theme.Spacing
+import com.kindness.wakealarm.ui.theme.TouchTarget
 import com.kindness.wakealarm.ui.theme.VioletContainer
 import com.kindness.wakealarm.ui.theme.WakeAlarmTheme
 import com.kindness.wakealarm.ui.theme.WakeType
@@ -125,6 +131,9 @@ class AlarmTriggerActivity : ComponentActivity() {
     }
 
     private var request by mutableStateOf<AlarmRequest?>(null)
+
+    /** True while a secure lock screen is up and the user hasn't unlocked to read the message. */
+    private var contentHidden by mutableStateOf(false)
 
     override fun attachBaseContext(newBase: Context) {
         super.attachBaseContext(AppLocale.wrap(newBase))
@@ -157,15 +166,48 @@ class AlarmTriggerActivity : ComponentActivity() {
             }
         }
 
+        contentHidden = isSecurelyLocked()
+
         setContent {
             WakeAlarmTheme {
                 AlarmScreen(
                     request = request,
+                    contentHidden = contentHidden,
+                    onReveal = ::unlockToRead,
                     onDismiss = ::dismissAlarm,
                     onOpenChat = ::dismissAndOpenChat
                 )
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // The user may have unlocked another way (fingerprint, face) while this screen was up
+        if (contentHidden && !isSecurelyLocked()) contentHidden = false
+    }
+
+    /**
+     * Patient details must not be readable by anyone who picks up a locked phone, so the message
+     * stays hidden behind a secure lock screen until the user unlocks. The alarm itself can always
+     * be stopped without unlocking.
+     */
+    private fun isSecurelyLocked(): Boolean {
+        val km = getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
+        return km.isKeyguardLocked && km.isDeviceSecure
+    }
+
+    private fun unlockToRead() {
+        if (!isSecurelyLocked()) {
+            contentHidden = false
+            return
+        }
+        val km = getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
+        km.requestDismissKeyguard(this, object : KeyguardManager.KeyguardDismissCallback() {
+            override fun onDismissSucceeded() {
+                contentHidden = false
+            }
+        })
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -213,9 +255,7 @@ class AlarmTriggerActivity : ComponentActivity() {
         AlarmForegroundService.stop()
         // Unlock first so the chat isn't hidden behind the keyguard
         val km = getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
-            km.requestDismissKeyguard(this, null)
-        }
+        km.requestDismissKeyguard(this, null)
         if (chatIntent != null) {
             try {
                 val options = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
@@ -238,12 +278,176 @@ class AlarmTriggerActivity : ComponentActivity() {
 @Composable
 private fun AlarmScreen(
     request: AlarmRequest?,
+    contentHidden: Boolean,
+    onReveal: () -> Unit,
     onDismiss: () -> Unit,
     onOpenChat: () -> Unit
 ) {
-    val context = LocalContext.current
     val extraMatches by AlarmForegroundService.extraMatchesFlow.collectAsStateWithLifecycle()
+    val isTest = request?.isTest == true
+    // Short phones and landscape: shrink the decoration so the stop control never needs scrolling
+    val screenHeight = LocalConfiguration.current.screenHeightDp
+    val compact = screenHeight < 700
+    val companionSize = when {
+        screenHeight < 560 -> 0.dp
+        compact -> 112.dp
+        screenHeight < 800 -> 140.dp
+        else -> 176.dp
+    }
 
+    StarfieldBackground(Modifier.fillMaxSize(), nebula = 2.6f, nebulaColor = AlarmAccent) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .safeDrawingPadding()
+                .padding(horizontal = Spacing.xl, vertical = Spacing.lg),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // Everything informational scrolls; the stop controls below are always on screen
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .widthIn(max = 560.dp)
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(Spacing.md)
+            ) {
+                Text(
+                    stringResource(if (isTest) R.string.alarm_screen_title_test else R.string.alarm_screen_title).uppercase(),
+                    style = WakeType.eyebrow,
+                    color = if (isTest) GoldSoft else AlarmAccent,
+                    modifier = Modifier.semantics { heading() }
+                )
+                AlarmClock(
+                    style = if (compact) MaterialTheme.typography.displayMedium else MaterialTheme.typography.displayLarge
+                )
+
+                if (companionSize > 0.dp) {
+                    Companion3D(size = companionSize, mood = CompanionMood.Alarm)
+                }
+
+                if (!request?.sender.isNullOrBlank()) {
+                    Text(
+                        stringResource(R.string.alarm_screen_from, request!!.sender),
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = Ivory,
+                        textAlign = TextAlign.Center,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                if (request != null) {
+                    Column(
+                        Modifier
+                            .fillMaxWidth()
+                            .hsrPanel(MaterialTheme.shapes.large, PanelLow.copy(alpha = 0.78f), AlarmAccent)
+                            .padding(Spacing.gutter),
+                        verticalArrangement = Arrangement.spacedBy(Spacing.md)
+                    ) {
+                        if (contentHidden) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Outlined.Lock, contentDescription = null, tint = Mist, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(Spacing.sm))
+                                Text(
+                                    stringResource(R.string.alarm_content_hidden),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = Mist
+                                )
+                            }
+                        } else if (request.message.isNotBlank()) {
+                            Text(
+                                request.message,
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = Ivory,
+                                maxLines = 6,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                        if (request.matchedKeywords.isNotEmpty()) {
+                            FlowRow(
+                                horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+                                verticalArrangement = Arrangement.spacedBy(Spacing.sm)
+                            ) {
+                                request.matchedKeywords.forEach { kw ->
+                                    KeywordPill(kw.uppercase(), container = Crimson.copy(alpha = 0.3f), content = OnCrimsonContainer)
+                                }
+                            }
+                        }
+                        if (contentHidden && request.message.isNotBlank()) {
+                            HsrButton(
+                                text = stringResource(R.string.action_unlock_to_read),
+                                onClick = onReveal,
+                                style = HsrButtonStyle.Secondary,
+                                icon = Icons.Outlined.LockOpen,
+                                minHeight = TouchTarget.min,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    }
+                }
+
+                if (extraMatches > 0) {
+                    Row(
+                        Modifier
+                            .clip(MaterialTheme.shapes.small)
+                            .background(VioletContainer.copy(alpha = 0.85f))
+                            .padding(horizontal = Spacing.md, vertical = Spacing.sm)
+                            .semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite },
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Outlined.MarkChatUnread, contentDescription = null, tint = OnVioletContainer, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(Spacing.sm))
+                        Text(
+                            pluralStringResource(R.plurals.alarm_extra_matches, extraMatches, extraMatches),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = OnVioletContainer
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(Spacing.md))
+
+            Column(
+                modifier = Modifier
+                    .widthIn(max = 560.dp)
+                    .fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(Spacing.md)
+            ) {
+                SlideToStop(label = stringResource(R.string.alarm_slide_to_stop), onComplete = onDismiss)
+
+                if (request?.chatIntent != null) {
+                    HsrButton(
+                        text = stringResource(R.string.alarm_stop_and_open_chat),
+                        onClick = onOpenChat,
+                        style = HsrButtonStyle.Secondary,
+                        icon = Icons.AutoMirrored.Filled.Chat,
+                        modifier = Modifier
+                            .widthIn(max = 420.dp)
+                            .fillMaxWidth()
+                    )
+                }
+
+                if (!compact) {
+                    Text(
+                        stringResource(R.string.tagline),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = Mist.copy(alpha = 0.6f),
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** The big clock; ticks on its own so the rest of the alarm screen isn't recomposed every second. */
+@Composable
+private fun AlarmClock(style: TextStyle) {
+    val context = LocalContext.current
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(Unit) {
         while (true) {
@@ -251,112 +455,7 @@ private fun AlarmScreen(
             now = System.currentTimeMillis()
         }
     }
-    val timeText = DateFormat.getTimeFormat(context).format(now)
-    val isTest = request?.isTest == true
-
-    StarfieldBackground(Modifier.fillMaxSize(), nebula = 2.6f, nebulaColor = AlarmAccent) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .safeDrawingPadding()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = Spacing.xl, vertical = Spacing.lg),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(Spacing.md)
-        ) {
-            Text(
-                stringResource(if (isTest) R.string.alarm_screen_title_test else R.string.alarm_screen_title).uppercase(),
-                style = WakeType.eyebrow,
-                color = if (isTest) GoldSoft else AlarmAccent,
-                modifier = Modifier.semantics { heading() }
-            )
-            Text(timeText, style = MaterialTheme.typography.displayLarge, color = Ivory)
-
-            Companion3D(size = 176.dp, mood = CompanionMood.Alarm)
-
-            if (!request?.sender.isNullOrBlank()) {
-                Text(
-                    stringResource(R.string.alarm_screen_from, request!!.sender),
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = Ivory,
-                    textAlign = TextAlign.Center,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-
-            if (request != null) {
-                Column(
-                    Modifier
-                        .fillMaxWidth()
-                        .hsrPanel(MaterialTheme.shapes.large, PanelLow.copy(alpha = 0.78f), AlarmAccent)
-                        .padding(Spacing.gutter),
-                    verticalArrangement = Arrangement.spacedBy(Spacing.md)
-                ) {
-                    if (request.message.isNotBlank()) {
-                        Text(
-                            request.message,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = Ivory,
-                            maxLines = 6,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                    if (request.matchedKeywords.isNotEmpty()) {
-                        FlowRow(
-                            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
-                            verticalArrangement = Arrangement.spacedBy(Spacing.sm)
-                        ) {
-                            request.matchedKeywords.forEach { kw ->
-                                KeywordPill(kw.uppercase(), container = Crimson.copy(alpha = 0.3f), content = OnCrimsonContainer)
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (extraMatches > 0) {
-                Row(
-                    Modifier
-                        .clip(MaterialTheme.shapes.small)
-                        .background(VioletContainer.copy(alpha = 0.85f))
-                        .padding(horizontal = Spacing.md, vertical = Spacing.sm)
-                        .semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite },
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(Icons.Outlined.MarkChatUnread, contentDescription = null, tint = OnVioletContainer, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(Spacing.sm))
-                    Text(
-                        pluralStringResource(R.plurals.alarm_extra_matches, extraMatches, extraMatches),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = OnVioletContainer
-                    )
-                }
-            }
-
-            Spacer(Modifier.weight(1f, fill = false))
-            Spacer(Modifier.height(Spacing.sm))
-
-            SlideToStop(label = stringResource(R.string.alarm_slide_to_stop), onComplete = onDismiss)
-
-            if (request?.chatIntent != null) {
-                HsrButton(
-                    text = stringResource(R.string.alarm_stop_and_open_chat),
-                    onClick = onOpenChat,
-                    style = HsrButtonStyle.Secondary,
-                    icon = Icons.AutoMirrored.Filled.Chat,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-
-            Text(
-                stringResource(R.string.tagline),
-                style = MaterialTheme.typography.labelMedium,
-                color = Mist.copy(alpha = 0.6f),
-                textAlign = TextAlign.Center
-            )
-        }
-    }
+    Text(DateFormat.getTimeFormat(context).format(now), style = style, color = Ivory)
 }
 
 /**
@@ -388,6 +487,9 @@ private fun SlideToStop(label: String, onComplete: () -> Unit) {
 
     Box(
         modifier = Modifier
+            // A fixed, comfortable drag distance: on tablets and in landscape a full-width track
+            // would need a 10+ cm swipe
+            .widthIn(max = 420.dp)
             .fillMaxWidth()
             .height(thumbSize + padding * 2)
             .clip(trackShape)
@@ -412,7 +514,15 @@ private fun SlideToStop(label: String, onComplete: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center
         ) {
-            Text(label.uppercase(), style = MaterialTheme.typography.labelLarge, color = Color.White)
+            Text(
+                label.uppercase(),
+                style = MaterialTheme.typography.labelLarge,
+                color = Color.White,
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false)
+            )
             Spacer(Modifier.width(Spacing.xs))
             Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = Color.White.copy(alpha = 0.8f))
         }

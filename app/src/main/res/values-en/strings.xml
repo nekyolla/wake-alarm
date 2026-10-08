@@ -34,6 +34,8 @@
     <string name="cd_back">Back</string>
     <string name="cd_add_keyword">Add keyword</string>
     <string name="cd_remove_keyword">Remove %1$s</string>
+    <string name="cd_expand">Show all</string>
+    <string name="cd_collapse">Show less</string>
 
     <!-- Bottom navigation -->
     <string name="tab_home">Home</string>
@@ -91,10 +93,10 @@
     <string name="stat_threshold">Threshold</string>
     <string name="stat_threshold_cd">Threshold: %1$d keywords per message</string>
     <string name="stat_last_alarm">Last alarm</string>
-    <string name="time_just_now">Just now</string>
-    <string name="time_minutes_ago">%1$d min ago</string>
-    <string name="time_hours_ago">%1$d h ago</string>
-    <string name="time_days_ago">%1$d d ago</string>
+    <string name="time_short_now">Now</string>
+    <string name="time_short_minutes">%1$dm</string>
+    <string name="time_short_hours">%1$dh</string>
+    <string name="time_short_days">%1$dd</string>
     <string name="snack_standby_on">Standby on</string>
     <string name="snack_standby_off">Standby paused</string>
     <string name="snack_test_failed">Test couldn\'t start. Check notification access.</string>
@@ -244,6 +246,8 @@
     <string name="alarm_screen_from">from %1$s</string>
     <string name="alarm_slide_to_stop">Slide to stop</string>
     <string name="alarm_stop_and_open_chat">Stop &amp; open chat</string>
+    <string name="alarm_content_hidden">Message hidden while the phone is locked.</string>
+    <string name="action_unlock_to_read">Unlock to read</string>
     <plurals name="alarm_extra_matches">
         <item quantity="one">+%1$d more urgent message · see History</item>
         <item quantity="other">+%1$d more urgent messages · see History</item>

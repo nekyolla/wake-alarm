@@ -30,12 +30,15 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     val masterSwitchState: StateFlow<Boolean> = settingsRepository.masterSwitchFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
-    val activeKeywordsCount: StateFlow<Int> = keywordRepository.allActiveKeywordsFlow
-        .map { it.size }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+    /** null until the first read from disk, so no "can't ring" warning flashes on launch. */
+    val activeKeywordsCount: StateFlow<Int?> = keywordRepository.allActiveKeywordsFlow
+        .map<List<String>, Int?> { it.size }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
-    val threshold: StateFlow<Int> = settingsRepository.thresholdFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SettingsRepository.DEFAULT_THRESHOLD)
+    /** null until loaded, like [activeKeywordsCount]. */
+    val threshold: StateFlow<Int?> = settingsRepository.thresholdFlow
+        .map<Int, Int?> { it }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     val lastAlarm: StateFlow<AlarmEvent?> = historyRepository.eventsFlow
         .map { it.firstOrNull() }

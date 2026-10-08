@@ -38,6 +38,8 @@
     <string name="cd_back">Kembali</string>
     <string name="cd_add_keyword">Tambah kata kunci</string>
     <string name="cd_remove_keyword">Hapus %1$s</string>
+    <string name="cd_expand">Tampilkan semua</string>
+    <string name="cd_collapse">Ringkas</string>
 
     <!-- Bottom navigation -->
     <string name="tab_home">Beranda</string>
@@ -94,10 +96,11 @@
     <string name="stat_threshold">Ambang</string>
     <string name="stat_threshold_cd">Ambang: %1$d kata kunci per pesan</string>
     <string name="stat_last_alarm">Alarm terakhir</string>
-    <string name="time_just_now">Baru saja</string>
-    <string name="time_minutes_ago">%1$d mnt lalu</string>
-    <string name="time_hours_ago">%1$d jam lalu</string>
-    <string name="time_days_ago">%1$d hr lalu</string>
+    <!-- Compact ages for the "Last alarm" tile: m = menit, j = jam, h = hari -->
+    <string name="time_short_now">Baru</string>
+    <string name="time_short_minutes">%1$dm</string>
+    <string name="time_short_hours">%1$dj</string>
+    <string name="time_short_days">%1$dh</string>
     <string name="snack_standby_on">Siaga aktif</string>
     <string name="snack_standby_off">Siaga dijeda</string>
     <string name="snack_test_failed">Tes gagal dimulai. Cek izin notifikasi.</string>
@@ -248,6 +251,8 @@
     <string name="alarm_screen_from">dari %1$s</string>
     <string name="alarm_slide_to_stop">Geser untuk mematikan</string>
     <string name="alarm_stop_and_open_chat">Matikan &amp; buka chat</string>
+    <string name="alarm_content_hidden">Isi pesan disembunyikan saat HP terkunci.</string>
+    <string name="action_unlock_to_read">Buka kunci untuk membaca</string>
     <plurals name="alarm_extra_matches">
         <item quantity="other">+%1$d pesan darurat lain · cek Riwayat</item>
     </plurals>
