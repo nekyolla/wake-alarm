@@ -327,7 +327,8 @@ private fun AlarmScreen(
                     Companion3D(size = companionSize, mood = CompanionMood.Alarm)
                 }
 
-                if (!request?.sender.isNullOrBlank()) {
+                // The sender (often a patient or ward group) is as private as the message itself
+                if (!contentHidden && !request?.sender.isNullOrBlank()) {
                     Text(
                         stringResource(R.string.alarm_screen_from, request!!.sender),
                         style = MaterialTheme.typography.headlineSmall,
@@ -375,7 +376,7 @@ private fun AlarmScreen(
                                 }
                             }
                         }
-                        if (contentHidden && request.message.isNotBlank()) {
+                        if (contentHidden && (request.message.isNotBlank() || request.sender.isNotBlank())) {
                             HsrButton(
                                 text = stringResource(R.string.action_unlock_to_read),
                                 onClick = onReveal,

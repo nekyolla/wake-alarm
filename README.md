@@ -106,7 +106,7 @@ Salin `keystore.properties.example` menjadi `keystore.properties` (sudah di-.git
 5. Balas pesan dari notifikasi dengan kata kunci → alarm tidak bunyi.
 6. Pengaturan: pilih file audio, hapus filenya, buka Pengaturan lagi → muncul peringatan nada.
 7. Matikan animasi di Opsi Developer → starfield & pendamping diam.
-8. HP dikunci dengan PIN, kirim pesan darurat → isi pesan tersembunyi di notifikasi & layar alarm; "Buka kunci untuk membaca" menampilkannya.
+8. HP dikunci dengan PIN, kirim pesan darurat → pengirim & isi pesan tersembunyi di notifikasi & layar alarm; "Buka kunci untuk membaca" menampilkannya.
 9. HP terkunci → tile Quick Settings / tombol "Jeda" meminta PIN sebelum siaga dimatikan.
 10. Jangan Ganggu "Hening total" (Android 8–14, izin DND diberikan) → alarm tetap bunyi, DND kembali seperti semula setelah dimatikan.
 11. HP layar kecil (360×640) dan landscape → tombol geser-untuk-mematikan terlihat tanpa scroll.

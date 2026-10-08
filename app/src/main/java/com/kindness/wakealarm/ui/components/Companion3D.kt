@@ -1,5 +1,6 @@
 package com.kindness.wakealarm.ui.components
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.ImageDecoder
 import android.graphics.drawable.AnimatedImageDrawable
@@ -274,34 +275,38 @@ private object AnimatedImageDrawableCompat {
     }
 }
 
+// The lint check misses the assignment below (it doesn't follow it through withContext)
+@SuppressLint("ProduceStateDoesNotAssignValue")
 @RequiresApi(Build.VERSION_CODES.P)
 @Composable
 private fun rememberAnimatedAsset(name: String): Animated {
     val context = LocalContext.current
     val state = produceState<Animated>(initialValue = Animated.Loading, name) {
-        value = withContext(Dispatchers.IO) {
-            try {
-                val drawable = ImageDecoder.decodeDrawable(ImageDecoder.createSource(context.assets, name)) { decoder, info, _ ->
-                    // Large GIFs are scaled down while decoding; the frame is never bigger than this
-                    val longest = maxOf(info.size.width, info.size.height)
-                    if (longest > MAX_DECODE_PX) {
-                        val scale = MAX_DECODE_PX.toFloat() / longest
-                        decoder.setTargetSize(
-                            (info.size.width * scale).toInt().coerceAtLeast(1),
-                            (info.size.height * scale).toInt().coerceAtLeast(1)
-                        )
-                    }
-                }
-                (drawable as? AnimatedImageDrawable)?.repeatCount = AnimatedImageDrawable.REPEAT_INFINITE
-                Animated.Ready(drawable)
-            } catch (e: Exception) {
-                Log.w(TAG, "Unable to decode companion asset $name", e)
-                Animated.Failed
-            }
-        }
+        value = withContext(Dispatchers.IO) { decodeAnimatedAsset(context, name) }
     }
     return state.value
 }
+
+@RequiresApi(Build.VERSION_CODES.P)
+private fun decodeAnimatedAsset(context: Context, name: String): Animated =
+    try {
+        val drawable = ImageDecoder.decodeDrawable(ImageDecoder.createSource(context.assets, name)) { decoder, info, _ ->
+            // Large GIFs are scaled down while decoding; the frame is never bigger than this
+            val longest = maxOf(info.size.width, info.size.height)
+            if (longest > MAX_DECODE_PX) {
+                val scale = MAX_DECODE_PX.toFloat() / longest
+                decoder.setTargetSize(
+                    (info.size.width * scale).toInt().coerceAtLeast(1),
+                    (info.size.height * scale).toInt().coerceAtLeast(1)
+                )
+            }
+        }
+        (drawable as? AnimatedImageDrawable)?.repeatCount = AnimatedImageDrawable.REPEAT_INFINITE
+        Animated.Ready(drawable)
+    } catch (e: Exception) {
+        Log.w(TAG, "Unable to decode companion asset $name", e)
+        Animated.Failed
+    }
 
 /**
  * Device tilt from the gravity sensor, smoothed, in -1..1 on both axes (x: left/right,

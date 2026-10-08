@@ -140,21 +140,23 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             stopPreview()
         } else if (!AlarmForegroundService.isRunning()) {
             _isPlayingPreview.value = true
-            // Preview plays at the user's current alarm volume rather than forcing 100%
-            val source = previewPlayer.start(
-                AlarmSoundPlayer.Options(
-                    customUri = customRingtoneUri.value,
-                    enableRampUp = volumeRampUp.value,
-                    vibrate = false,
-                    forceMaxVolume = false
+            viewModelScope.launch {
+                // Preview plays at the user's current alarm volume rather than forcing 100%
+                val source = previewPlayer.start(
+                    AlarmSoundPlayer.Options(
+                        customUri = customRingtoneUri.value,
+                        enableRampUp = volumeRampUp.value,
+                        vibrate = false,
+                        forceMaxVolume = false
+                    )
                 )
-            )
-            when (source) {
-                AlarmSoundPlayer.Source.REQUESTED -> Unit
-                AlarmSoundPlayer.Source.FALLBACK -> _messages.trySend(R.string.snack_ringtone_fallback)
-                AlarmSoundPlayer.Source.NONE -> {
-                    stopPreview()
-                    _messages.trySend(R.string.snack_ringtone_none)
+                when (source) {
+                    null, AlarmSoundPlayer.Source.REQUESTED -> Unit // null: stopped while loading
+                    AlarmSoundPlayer.Source.FALLBACK -> _messages.send(R.string.snack_ringtone_fallback)
+                    AlarmSoundPlayer.Source.NONE -> {
+                        stopPreview()
+                        _messages.send(R.string.snack_ringtone_none)
+                    }
                 }
             }
         }

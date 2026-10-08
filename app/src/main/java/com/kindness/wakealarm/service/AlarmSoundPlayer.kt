@@ -14,11 +14,14 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 import android.util.Log
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Manages alarm sound playback and vibration.
@@ -70,13 +73,18 @@ class AlarmSoundPlayer(context: Context) {
     private var originalAlarmVolume: Int? = null
     private val scope = CoroutineScope(Dispatchers.Main)
 
+    /** Bumped by [stop], so a start that is still preparing its file knows it was cancelled. */
+    private var session = 0
+
     /**
      * Start playing the alarm sound (and vibrating, if enabled). Restarts if already playing.
+     * Call from the main thread; the file is opened and prepared off it.
      *
-     * @return which sound is playing.
+     * @return which sound is playing, or null if [stop] was called while it was being prepared.
      */
-    fun start(options: Options = Options()): Source {
+    suspend fun start(options: Options = Options()): Source? {
         stop()
+        val mySession = session
 
         if (options.forceMaxVolume) {
             // Force STREAM_ALARM to 100% so silent/vibrate/DND or a low alarm volume can't mute it
@@ -98,6 +106,7 @@ class AlarmSoundPlayer(context: Context) {
             defaultAlarmUri()
         }
         val source = if (targetUri != null) playAudio(targetUri, options.enableRampUp) else Source.NONE
+        if (mySession != session) return null
 
         // Never fail silently: with no playable sound, vibrate even if vibration is turned off
         if (options.vibrate || source == Source.NONE) startVibration()
@@ -109,29 +118,48 @@ class AlarmSoundPlayer(context: Context) {
             ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
             ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
 
-    private fun playAudio(uri: Uri, enableRampUp: Boolean): Source {
+    private suspend fun playAudio(uri: Uri, enableRampUp: Boolean): Source {
         val initialVolume = if (enableRampUp) RAMP_START else 1.0f
+        val mySession = session
 
         try {
-            mediaPlayer = MediaPlayer().apply {
-                setAudioAttributes(alarmAttributes)
-                // Keeps the CPU awake for exactly as long as the sound is playing
-                setWakeMode(context, PowerManager.PARTIAL_WAKE_LOCK)
-                setDataSource(context, uri)
-                isLooping = true
-                setVolume(initialVolume, initialVolume)
-                prepare()
-                start()
+            // Opening a file can be slow (e.g. one kept in cloud storage); never block the main thread on it.
+            // NonCancellable: the prepared player must come back so it can be released, never leaked.
+            val player = withContext(Dispatchers.IO + NonCancellable) {
+                val player = MediaPlayer()
+                try {
+                    player.apply {
+                        setAudioAttributes(alarmAttributes)
+                        // Keeps the CPU awake for exactly as long as the sound is playing
+                        setWakeMode(context, PowerManager.PARTIAL_WAKE_LOCK)
+                        setDataSource(context, uri)
+                        isLooping = true
+                        setVolume(initialVolume, initialVolume)
+                        prepare()
+                    }
+                } catch (e: Exception) {
+                    player.release()
+                    throw e
+                }
             }
+            if (mySession != session) {
+                // Stopped while preparing
+                player.release()
+                return Source.NONE
+            }
+            mediaPlayer = player
+            player.start()
 
             if (enableRampUp) {
                 startVolumeRampUp()
             }
             return Source.REQUESTED
         } catch (e: Exception) {
+            if (e is CancellationException) throw e
             Log.e(TAG, "MediaPlayer failed for URI: $uri, falling back to Ringtone", e)
             mediaPlayer?.release()
             mediaPlayer = null
+            if (mySession != session) return Source.NONE
             // A custom file may have been deleted or lost its permission: fall back to the system alarm
             if (playFallbackRingtone(uri)) return Source.REQUESTED
             val fallback = defaultAlarmUri() ?: return Source.NONE
@@ -202,6 +230,7 @@ class AlarmSoundPlayer(context: Context) {
      * Stop the alarm sound, ramp-up coroutine, and vibration, and restore the user's alarm volume.
      */
     fun stop() {
+        session++
         rampUpJob?.cancel()
         rampUpJob = null
 

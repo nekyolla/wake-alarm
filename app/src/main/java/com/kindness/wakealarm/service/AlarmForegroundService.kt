@@ -292,18 +292,23 @@ class AlarmForegroundService : Service() {
             if (!_isAlarmRunningFlow.value) return@launch
             letAlarmsThroughDnd()
             soundPlayer?.stop()
-            soundPlayer = AlarmSoundPlayer(this@AlarmForegroundService).apply { start(options) }
+            // Owned before it starts, so a stop that lands while the sound file is still loading reaches it
+            val player = AlarmSoundPlayer(this@AlarmForegroundService)
+            soundPlayer = player
 
             if (!request.isTest) {
-                historyRepository.add(
-                    AlarmEvent(
-                        timestamp = System.currentTimeMillis(),
-                        sender = request.sender,
-                        message = request.message,
-                        keywords = request.matchedKeywords
+                launch {
+                    historyRepository.add(
+                        AlarmEvent(
+                            timestamp = System.currentTimeMillis(),
+                            sender = request.sender,
+                            message = request.message,
+                            keywords = request.matchedKeywords
+                        )
                     )
-                )
+                }
             }
+            player.start(options)
         }
 
         return START_NOT_STICKY

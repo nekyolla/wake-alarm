@@ -86,12 +86,12 @@
     <string name="home_listener_disconnected_title">Watching stopped</string>
     <string name="home_listener_disconnected_body">Reconnect, then check battery access.</string>
     <string name="home_keywords_insufficient_title">The alarm can\'t ring</string>
-    <string name="home_keywords_insufficient_body">%1$d keywords on, at least %2$d needed.</string>
+    <string name="home_keywords_insufficient_body">Active keywords: %1$d, at least %2$d needed.</string>
     <string name="home_alarm_ringing_title">Alarm ringing</string>
     <string name="home_alarm_ringing_body">An urgent message came in.</string>
     <string name="stat_active_keywords">Active keywords</string>
     <string name="stat_threshold">Threshold</string>
-    <string name="stat_threshold_cd">Threshold: %1$d keywords per message</string>
+    <string name="stat_threshold_cd">Threshold per message: %1$d</string>
     <string name="stat_last_alarm">Last alarm</string>
     <string name="time_short_now">Now</string>
     <string name="time_short_minutes">%1$dm</string>
@@ -115,7 +115,7 @@
         <item quantity="one">%1$d active keyword</item>
         <item quantity="other">%1$d active keywords</item>
     </plurals>
-    <string name="keywords_summary_body">Rings when ≥%1$d keywords are in one message.</string>
+    <string name="keywords_summary_body">Rings when one message has ≥%1$d of your keywords.</string>
     <string name="tester_title">Test a message</string>
     <string name="tester_placeholder">e.g. Koas segera ke IGD, urgent</string>
     <string name="tester_would_ring">Would ring (%1$d/%2$d match)</string>
@@ -135,7 +135,7 @@
     <string name="keyword_error_duplicate">Already added</string>
     <string name="keyword_added">\"%1$s\" added</string>
     <string name="keyword_removed">\"%1$s\" removed</string>
-    <string name="snack_below_threshold">%1$d keywords left, threshold %2$d. The alarm can\'t ring.</string>
+    <string name="snack_below_threshold">Keywords left: %1$d, threshold: %2$d. The alarm can\'t ring.</string>
     <string name="preset_jaga">On-call shift</string>
     <string name="preset_urgent">Urgent message</string>
     <string name="preset_segera">Act now</string>
@@ -159,7 +159,7 @@
     <string name="settings_threshold_hint_1">One keyword is enough. More false alarms.</string>
     <string name="settings_threshold_hint_2">Two different keywords. Recommended.</string>
     <string name="settings_threshold_hint_many">%1$d different keywords. Rings less often.</string>
-    <string name="settings_threshold_warning">Only %1$d keywords on. The alarm can\'t ring.</string>
+    <string name="settings_threshold_warning">Active keywords: only %1$d. The alarm can\'t ring.</string>
     <string name="settings_section_sound">Sound</string>
     <string name="settings_ringtone_label">Alarm sound</string>
     <string name="settings_ringtone_unavailable">File can\'t be opened. The default sound will play.</string>
@@ -246,7 +246,7 @@
     <string name="alarm_screen_from">from %1$s</string>
     <string name="alarm_slide_to_stop">Slide to stop</string>
     <string name="alarm_stop_and_open_chat">Stop &amp; open chat</string>
-    <string name="alarm_content_hidden">Message hidden while the phone is locked.</string>
+    <string name="alarm_content_hidden">Sender and message hidden while the phone is locked.</string>
     <string name="action_unlock_to_read">Unlock to read</string>
     <plurals name="alarm_extra_matches">
         <item quantity="one">+%1$d more urgent message · see History</item>
